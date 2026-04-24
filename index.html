@@ -455,20 +455,20 @@ function wxIcon(code,isDay){
 }
 async function fetchWeather(){
   try{
-    const url='https://api.open-meteo.com/v1/forecast?latitude=43.73&longitude=-79.76&current=temperature_2m,weathercode,is_day&daily=weathercode,temperature_2m_max,precipitation_probability_max&timezone=America%2FToronto&forecast_days=4';
+    const url='https://api.open-meteo.com/v1/forecast?latitude=43.73&longitude=-79.76&current=temperature_2m,weather_code,is_day&daily=weather_code,temperature_2m_max,precipitation_probability_max&timezone=America%2FToronto&forecast_days=4';
     const r=await fetch(url);
     const d=await r.json();
     const cur=d.current;
     const daily=d.daily;
     const temp=Math.round(cur.temperature_2m);
-    const code=cur.weathercode;
+    const code=cur.weather_code;
     const isDay=cur.is_day===1;
     const cond=WMO[code]||'Clear';
     const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     const forecast=daily.date.slice(1,4).map((dt,i)=>({
       day:days[new Date(dt+'T12:00:00').getDay()],
       high:Math.round(daily.temperature_2m_max[i+1]),
-      code:daily.weathercode[i+1],
+      code:daily.daily_weather_code ? daily.daily_weather_code[i+1] : daily.weather_code[i+1],
     }));
     document.getElementById('wx-icon').textContent=wxIcon(code,isDay);
     document.getElementById('wx-temp').textContent=temp+'°C';
