@@ -13,7 +13,7 @@
   --tx:#18181c;--tx2:#7a7a8a;--tx3:#b0b0be;
   --bd:rgba(0,0,0,0.07);--bds:rgba(0,0,0,0.13);
   --acc:#6c63ff;--acc2:#a09df7;--acc3:#e8e7ff;
-  --blue:#4a90d9;--green:#4caf7d;--red:#e05c5c;--amber:#e8a838;--purple:#6c63ff;
+  --green:#4caf7d;--red:#e05c5c;--amber:#e8a838;
   --fblue:#e8f1fb;--fgreen:#e6f5ed;--fred:#fdeaea;--famber:#fef3e2;--fpurple:#e8e7ff;
   --r:10px;--rl:16px;--rxl:22px;--f:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   --shadow:0 2px 12px rgba(0,0,0,0.06);--shadow2:0 4px 24px rgba(0,0,0,0.09);
@@ -22,56 +22,79 @@
   --bg:#13131a;--bg2:#1c1c26;--bg3:#0e0e14;
   --tx:#e8e8f0;--tx2:#8888a0;--tx3:#44445a;
   --bd:rgba(255,255,255,0.07);--bds:rgba(255,255,255,0.13);
-  --acc:#7c74ff;--acc2:#a09df7;--acc3:#1e1c3a;
+  --acc:#7c74ff;--acc3:#1e1c3a;
   --fblue:#0d1e35;--fgreen:#0d2318;--fred:#2a1010;--famber:#2a1a06;--fpurple:#1a1832;
   --shadow:0 2px 12px rgba(0,0,0,0.3);--shadow2:0 4px 24px rgba(0,0,0,0.4);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--f);background:var(--bg);color:var(--tx);min-height:100vh;font-size:14px;line-height:1.5}
 
+/* ── LAYOUT ── */
 .shell{display:flex;min-height:100vh}
 .sidebar{width:220px;flex-shrink:0;background:var(--bg2);border-right:0.5px solid var(--bd);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow:hidden}
 .main{flex:1;overflow:auto}
 
-.sb-top{padding:28px 20px 20px}
-.sb-avatar{width:44px;height:44px;border-radius:50%;background:var(--acc3);display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:12px}
-.sb-name{font-size:15px;font-weight:600;color:var(--tx)}
+/* ── SIDEBAR ── */
+.sb-top{padding:24px 20px 16px}
+.sb-avatar{width:44px;height:44px;border-radius:50%;background:var(--acc3);display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:10px}
+.sb-name{font-size:15px;font-weight:600}
 .sb-nav{padding:8px 12px;flex:1}
 .sbn{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--r);font-size:13px;color:var(--tx2);cursor:pointer;transition:all .15s;margin-bottom:2px;user-select:none}
 .sbn:hover{background:var(--bg3);color:var(--tx)}
 .sbn.active{background:var(--acc3);color:var(--acc);font-weight:500}
 .sbn svg{width:16px;height:16px;flex-shrink:0;opacity:.7}
 .sbn.active svg{opacity:1}
-.sb-divider{height:0.5px;background:var(--bd);margin:12px 20px}
+.sb-divider{height:0.5px;background:var(--bd);margin:8px 20px}
 .sb-bottom{padding:12px}
-.clock-display{padding:14px 18px;margin:8px 12px;background:var(--bg3);border-radius:var(--rl)}
-.clock-time{font-size:22px;font-weight:600;letter-spacing:1px;color:var(--tx);font-variant-numeric:tabular-nums}
-.clock-date{font-size:11px;color:var(--tx2);margin-top:2px}
 
+/* ── FLIP CLOCK ── */
+.flip-clock-wrap{padding:14px 16px;margin:8px 12px;background:var(--bg3);border-radius:var(--rl)}
+.flip-clock{display:flex;align-items:center;gap:6px}
+.flip-group{display:flex;gap:3px}
+.flip-card{width:28px;height:38px;position:relative;perspective:200px}
+.flip-card-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d}
+.flip-top,.flip-bottom{position:absolute;width:100%;height:50%;overflow:hidden;background:#1a1a2e;border-radius:4px 4px 0 0}
+.flip-bottom{top:50%;border-radius:0 0 4px 4px;transform-origin:top}
+.flip-top span,.flip-bottom span{position:absolute;width:100%;height:200%;left:0;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;color:#e8e8f0;font-variant-numeric:tabular-nums;font-family:'Inter',monospace}
+.flip-bottom span{top:-100%}
+.flip-colon{font-size:20px;font-weight:600;color:var(--tx2);line-height:38px;margin:0 1px}
+.flip-date{font-size:11px;color:var(--tx2);margin-top:8px}
+
+/* ── FLIP ANIMATION ── */
+@keyframes flipTop{0%{transform:rotateX(0deg)}100%{transform:rotateX(-90deg)}}
+@keyframes flipBottom{0%{transform:rotateX(90deg)}100%{transform:rotateX(0deg)}}
+.flip-card.flipping .flip-top{animation:flipTop .2s ease-in forwards}
+.flip-card.flipping .flip-bottom{animation:flipBottom .2s ease-out .2s forwards}
+
+/* ── HEADER ── */
 .header{padding:24px 32px 0;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px}
 .header-left h1{font-size:22px;font-weight:600}
 .header-left p{font-size:13px;color:var(--tx2);margin-top:3px}
 .header-right{display:flex;gap:8px}
 .wx-card{display:flex;align-items:center;gap:12px;background:var(--bg2);border:0.5px solid var(--bd);border-radius:var(--rl);padding:12px 18px;box-shadow:var(--shadow)}
-.wx-forecast{display:flex;gap:10px}
-.wx-day{text-align:center}
 .wx-sep{border-left:0.5px solid var(--bd);padding-left:12px;margin-left:4px}
 .wx-label{font-size:11px;color:var(--tx2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px}
+.wx-forecast{display:flex;gap:10px}
+.wx-day{text-align:center}
 
+/* ── CONTENT ── */
 .content{padding:20px 32px 40px}
 .sec{display:none}.sec.active{display:block}
 
+/* ── CARDS ── */
 .card{background:var(--bg2);border:0.5px solid var(--bd);border-radius:var(--rl);padding:20px 22px;margin-bottom:18px;box-shadow:var(--shadow)}
 .mc{background:var(--bg2);border:0.5px solid var(--bd);border-radius:var(--rl);padding:18px;box-shadow:var(--shadow)}
 .ml{font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
 .mv{font-size:26px;font-weight:600}
-.st{font-size:13px;font-weight:600;margin-bottom:16px;color:var(--tx);letter-spacing:.1px}
+.st{font-size:13px;font-weight:600;margin-bottom:16px;color:var(--tx)}
 
+/* ── GRIDS ── */
 .g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:18px}
 .g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:18px}
 .g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}
-@media(max-width:700px){.g3,.g4{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}.sidebar{width:60px}.sb-name,.clock-display,.sb-bottom,.sbn span{display:none}.sbn{justify-content:center;padding:10px}.content{padding:16px}.header{padding:16px 16px 0}}
+@media(max-width:700px){.g3,.g4{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}.sidebar{width:60px}.sb-name,.sb-bottom,.sbn span,.flip-clock-wrap{display:none}.sbn{justify-content:center;padding:10px}.content{padding:16px}.header{padding:16px 16px 0}}
 
+/* ── ROWS ── */
 .row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--bd);font-size:13px}
 .row:last-child{border-bottom:none}
 .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
@@ -84,8 +107,8 @@ body{font-family:var(--f);background:var(--bg);color:var(--tx);min-height:100vh;
 .badge{font-size:11px;padding:2px 9px;border-radius:20px;font-weight:500;white-space:nowrap}
 .ph{background:var(--fred);color:#c04040}.pm{background:var(--famber);color:#b07020}.pl{background:var(--fgreen);color:#3a8060}
 .sd{background:var(--fgreen);color:#3a8060}.si{background:var(--famber);color:#b07020}.st2{background:var(--bg3);color:var(--tx2)}
-.gb{background:var(--fpurple);color:var(--acc)}
 
+/* ── BUTTONS ── */
 button{font-family:var(--f);background:var(--bg2);border:0.5px solid var(--bds);border-radius:var(--r);padding:8px 16px;font-size:13px;color:var(--tx);cursor:pointer;transition:all .15s;font-weight:500}
 button:hover{background:var(--bg3);border-color:var(--acc);color:var(--acc)}
 button:active{transform:scale(.98)}
@@ -93,21 +116,25 @@ button:active{transform:scale(.98)}
 .btn-primary:hover{background:#5a52e0;border-color:#5a52e0;color:#fff}
 .xbtn{padding:3px 7px!important;font-size:11px!important;border-radius:6px!important}
 
+/* ── INPUTS ── */
 input,select,textarea{font-family:var(--f);font-size:13px;padding:9px 12px;border:0.5px solid var(--bds);border-radius:var(--r);background:var(--bg);color:var(--tx);outline:none;transition:border .15s}
 input:focus,select:focus,textarea:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(108,99,255,0.1)}
 .ar{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
 .ar input,.ar select{flex:1;min-width:90px}
 
+/* ── PROGRESS ── */
 .pbg{height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}
 .pf{height:5px;border-radius:3px;transition:width .5s ease}
 .fb{background:linear-gradient(90deg,#4a90d9,#6c63ff)}.fp{background:linear-gradient(90deg,#6c63ff,#a09df7)}
 .fg{background:linear-gradient(90deg,#4caf7d,#7dd4a8)}.fa{background:linear-gradient(90deg,#e8a838,#f5c96a)}.fr{background:linear-gradient(90deg,#e05c5c,#f08080)}
 
+/* ── SAVINGS ── */
 .sg{padding:13px 0;border-bottom:0.5px solid var(--bd)}
 .sg:last-child{border-bottom:none}
 .sh{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:8px}
 .sn{font-weight:500}.sp{color:var(--tx2);font-size:12px}
 
+/* ── MONEY ── */
 .brow{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:0.5px solid var(--bd);font-size:13px}
 .brow:last-child{border-bottom:none}
 .bl{color:var(--tx2)}
@@ -122,22 +149,41 @@ input:focus,select:focus,textarea:focus{border-color:var(--acc);box-shadow:0 0 0
 .tn{flex:1}
 .net-row{font-size:14px;font-weight:600;display:flex;justify-content:space-between;padding-top:14px;margin-top:4px;border-top:1px solid var(--bd)}
 
+/* ── ACADEMICS ── */
 .cc{background:var(--bg2);border:0.5px solid var(--bd);border-radius:var(--rl);padding:18px 20px;margin-bottom:14px;box-shadow:var(--shadow)}
 .ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
 .cn{font-size:14px;font-weight:600}
 .arow{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:0.5px solid var(--bd);font-size:13px}
 .arow:last-of-type{border-bottom:none}
-.an{flex:1}
-.ad{font-size:12px;color:var(--tx2)}
+.an{flex:1}.ad{font-size:12px;color:var(--tx2)}
 textarea.notes{width:100%;min-height:60px;margin-top:12px;resize:vertical;background:var(--bg3);border-color:transparent;border-radius:var(--r);font-size:12px;color:var(--tx2)}
 textarea.notes:focus{background:var(--bg);border-color:var(--acc)}
 
+/* ── POMODORO ── */
 .pomo-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;padding:12px 0}
 .ptime{font-size:52px;font-weight:300;letter-spacing:4px;color:var(--tx);font-variant-numeric:tabular-nums}
 .plabel{font-size:12px;color:var(--tx2);text-transform:uppercase;letter-spacing:1px}
 .pbtns{display:flex;gap:8px}
 .pbar-wrap{width:100%;max-width:280px}
 
+/* ── HABIT TRACKER ── */
+.habit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:18px}
+.habit-card{background:var(--bg2);border:0.5px solid var(--bd);border-radius:var(--rl);padding:18px;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;transition:all .2s;position:relative}
+.habit-card:hover{border-color:var(--acc2);transform:translateY(-1px);box-shadow:var(--shadow2)}
+.habit-card.done{background:var(--acc3);border-color:var(--acc2)}
+.habit-emoji{font-size:28px;line-height:1}
+.habit-name{font-size:13px;font-weight:500;text-align:center;color:var(--tx)}
+.habit-streak{font-size:11px;color:var(--tx2);display:flex;align-items:center;gap:4px}
+.habit-streak.hot{color:#e05c5c}
+.habit-check{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--bds);display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .2s}
+.habit-card.done .habit-check{background:var(--acc);border-color:var(--acc);color:#fff}
+.habit-del{position:absolute;top:8px;right:8px;opacity:0;transition:opacity .15s;padding:2px 6px!important;font-size:10px!important;border-radius:5px!important}
+.habit-card:hover .habit-del{opacity:1}
+.week-dots{display:flex;gap:3px}
+.wdot{width:6px;height:6px;border-radius:50%;background:var(--bg3)}
+.wdot.filled{background:var(--acc)}
+
+/* ── MODAL ── */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center}
 .modal-bg.open{display:flex}
 .modal{background:var(--bg2);border-radius:var(--rxl);padding:28px;width:min(440px,92vw);border:0.5px solid var(--bd);box-shadow:var(--shadow2)}
@@ -147,6 +193,13 @@ textarea.notes:focus{background:var(--bg);border-color:var(--acc)}
 .mrow input,.mrow select,.mrow textarea{width:100%}
 .mbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
 
+/* ── EMOJI PICKER ── */
+.emoji-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.epick{font-size:20px;cursor:pointer;padding:4px;border-radius:6px;border:1.5px solid transparent;transition:all .1s;line-height:1}
+.epick:hover{background:var(--bg3)}
+.epick.selected{border-color:var(--acc);background:var(--acc3)}
+
+/* ── TAG STRIP ── */
 .tag-strip{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
 .tag-pill{font-size:11px;padding:4px 12px;border-radius:20px;cursor:pointer;border:0.5px solid var(--bd);background:var(--bg2);color:var(--tx2);font-weight:500;transition:all .15s}
 .tag-pill.active{background:var(--acc);color:#fff;border-color:var(--acc)}
@@ -194,6 +247,17 @@ textarea.notes:focus{background:var(--bg);border-color:var(--acc)}
     <div class="mbtns"><button onclick="closeModal('saving-modal')">Cancel</button><button class="btn-primary" onclick="saveSaving()">Add goal</button></div>
   </div>
 </div>
+<div class="modal-bg" id="habit-modal">
+  <div class="modal">
+    <h3>Add habit</h3>
+    <div class="mrow"><label>Habit name</label><input id="m-habit-name" type="text" placeholder="e.g. Practice guitar"/></div>
+    <div class="mrow">
+      <label>Pick an emoji</label>
+      <div class="emoji-grid" id="emoji-grid"></div>
+    </div>
+    <div class="mbtns"><button onclick="closeModal('habit-modal')">Cancel</button><button class="btn-primary" onclick="saveHabit()">Add habit</button></div>
+  </div>
+</div>
 
 <div class="shell">
   <!-- SIDEBAR -->
@@ -202,9 +266,20 @@ textarea.notes:focus{background:var(--bg);border-color:var(--acc)}
       <div class="sb-avatar">🎸</div>
       <div class="sb-name">Jazz</div>
     </div>
-    <div class="clock-display">
-      <div class="clock-time" id="sb-clock">--:--</div>
-      <div class="clock-date" id="sb-date"></div>
+    <!-- FLIP CLOCK -->
+    <div class="flip-clock-wrap">
+      <div class="flip-clock" id="flip-clock">
+        <div class="flip-group">
+          <div class="flip-card" id="fc-h0"><div class="flip-top"><span>0</span></div><div class="flip-bottom"><span>0</span></div></div>
+          <div class="flip-card" id="fc-h1"><div class="flip-top"><span>0</span></div><div class="flip-bottom"><span>0</span></div></div>
+        </div>
+        <div class="flip-colon">:</div>
+        <div class="flip-group">
+          <div class="flip-card" id="fc-m0"><div class="flip-top"><span>0</span></div><div class="flip-bottom"><span>0</span></div></div>
+          <div class="flip-card" id="fc-m1"><div class="flip-top"><span>0</span></div><div class="flip-bottom"><span>0</span></div></div>
+        </div>
+      </div>
+      <div class="flip-date" id="flip-date"></div>
     </div>
     <div class="sb-nav">
       <div class="sbn active" onclick="switchTab('home')">
@@ -218,6 +293,9 @@ textarea.notes:focus{background:var(--bg);border-color:var(--acc)}
       </div>
       <div class="sbn" onclick="switchTab('money')">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="4" width="14" height="10" rx="2"/><path d="M1 7h14"/><circle cx="8" cy="11" r="1.5"/></svg><span>Money</span>
+      </div>
+      <div class="sbn" onclick="switchTab('habits')">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2a6 6 0 100 12A6 6 0 008 2z"/><path d="M8 5v3l2 2"/></svg><span>Habits</span>
       </div>
     </div>
     <div class="sb-divider"></div>
@@ -236,7 +314,6 @@ textarea.notes:focus{background:var(--bg);border-color:var(--acc)}
           <h1 id="greeting">Good morning ✦</h1>
           <p>Here's what's on today.</p>
         </div>
-
         <div class="wx-card">
           <div style="font-size:28px;line-height:1" id="wx-icon">⏳</div>
           <div>
@@ -246,11 +323,7 @@ textarea.notes:focus{background:var(--bg);border-color:var(--acc)}
           <div class="wx-sep">
             <div class="wx-label">Next 3 days</div>
             <div class="wx-forecast" id="wx-forecast">
-              <div class="wx-day" style="opacity:.4">
-                <div style="font-size:14px">—</div>
-                <div style="font-size:11px;font-weight:500;margin-top:2px">--°</div>
-                <div style="font-size:10px;color:var(--tx2)">---</div>
-              </div>
+              <div class="wx-day" style="opacity:.4"><div style="font-size:14px">—</div><div style="font-size:11px;font-weight:500;margin-top:2px">--°</div><div style="font-size:10px;color:var(--tx2)">---</div></div>
             </div>
           </div>
         </div>
@@ -271,8 +344,8 @@ textarea.notes:focus{background:var(--bg);border-color:var(--acc)}
             <div class="st">Today's to-dos</div>
             <div id="hm-todos"><span style="font-size:13px;color:var(--tx2)">No tasks for today.</span></div>
             <div class="div"></div>
-            <div class="st">Savings progress</div>
-            <div id="hm-savings"><span style="font-size:13px;color:var(--tx2)">No savings goals yet.</span></div>
+            <div class="st">Habits today</div>
+            <div id="hm-habits"><span style="font-size:13px;color:var(--tx2)">No habits yet.</span></div>
           </div>
         </div>
         <div class="card">
@@ -375,37 +448,134 @@ textarea.notes:focus{background:var(--bg);border-color:var(--acc)}
       </div>
     </div>
 
+    <!-- HABITS -->
+    <div class="sec" id="sec-habits">
+      <div class="header">
+        <div class="header-left"><h1>Habits</h1><p id="habit-summary">Track your daily habits.</p></div>
+        <div class="header-right"><button class="btn-primary" onclick="openHabitModal()">+ Add habit</button></div>
+      </div>
+      <div class="content">
+        <div class="habit-grid" id="habit-grid"></div>
+        <div class="card" id="habit-empty" style="display:none;text-align:center;padding:40px;color:var(--tx2)">
+          <div style="font-size:32px;margin-bottom:12px">🌱</div>
+          <div style="font-size:14px;font-weight:500;margin-bottom:6px">No habits yet</div>
+          <div style="font-size:13px">Add a habit to start building your streaks.</div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
 <script>
 /* ── STATE ── */
 let S={
-  tasks:[],
-  courses:[],
-  txns:[],
-  savings:[],
-  nid:{task:0,course:0,assign:0,saving:0,txn:0},
-  editTaskId:null,
+  tasks:[],courses:[],txns:[],savings:[],
+  habits:[],
+  nid:{task:0,course:0,assign:0,saving:0,txn:0,habit:0},
 };
-function save(){try{localStorage.setItem('jdash3',JSON.stringify(S))}catch(e){}}
-function load(){try{const d=localStorage.getItem('jdash3');if(d)S=JSON.parse(d)}catch(e){}}
+function save(){try{localStorage.setItem('jdash4',JSON.stringify(S))}catch(e){}}
+function load(){try{const d=localStorage.getItem('jdash4');if(d)S=JSON.parse(d)}catch(e){}}
 load();
 
-/* ── CLOCK ── */
-function updateClock(){
-  const now=new Date();
-  document.getElementById('sb-clock').textContent=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-  document.getElementById('sb-date').textContent=now.toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'});
-  const hr=now.getHours();
-  const el=document.getElementById('greeting');
-  if(el)el.textContent=(hr<12?'Good morning ✦':hr<17?'Good afternoon ✦':'Good evening ✦');
+/* ── FLIP CLOCK ── */
+let prevH='--',prevM='--';
+const fcIds=['fc-h0','fc-h1','fc-m0','fc-m1'];
+function setFlipDigit(id,newVal,oldVal){
+  if(newVal===oldVal)return;
+  const el=document.getElementById(id);
+  if(!el)return;
+  const top=el.querySelector('.flip-top span');
+  const bot=el.querySelector('.flip-bottom span');
+  // Set new value
+  top.textContent=newVal;
+  bot.textContent=newVal;
+  el.classList.remove('flipping');
+  void el.offsetWidth; // reflow
+  el.classList.add('flipping');
+  setTimeout(()=>el.classList.remove('flipping'),500);
 }
-updateClock();setInterval(updateClock,10000);
+function updateFlipClock(){
+  const now=new Date();
+  const h=String(now.getHours()).padStart(2,'0');
+  const m=String(now.getMinutes()).padStart(2,'0');
+  if(h!==prevH){
+    setFlipDigit('fc-h0',h[0],prevH[0]);
+    setFlipDigit('fc-h1',h[1],prevH[1]);
+    prevH=h;
+  }
+  if(m!==prevM){
+    setFlipDigit('fc-m0',m[0],prevM[0]);
+    setFlipDigit('fc-m1',m[1],prevM[1]);
+    prevM=m;
+  }
+  // Init display
+  ['fc-h0','fc-h1'].forEach((id,i)=>{
+    const el=document.getElementById(id);
+    if(el){el.querySelector('.flip-top span').textContent=h[i];el.querySelector('.flip-bottom span').textContent=h[i];}
+  });
+  ['fc-m0','fc-m1'].forEach((id,i)=>{
+    const el=document.getElementById(id);
+    if(el){el.querySelector('.flip-top span').textContent=m[i];el.querySelector('.flip-bottom span').textContent=m[i];}
+  });
+  document.getElementById('flip-date').textContent=now.toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'});
+  const hr=now.getHours();
+  const grEl=document.getElementById('greeting');
+  if(grEl)grEl.textContent=hr<12?'Good morning ✦':hr<17?'Good afternoon ✦':'Good evening ✦';
+}
+updateFlipClock();
+setInterval(updateFlipClock,5000);
 
+/* ── WEATHER ── */
+const OWM_KEY='1bab283e1692f04224d8ed4ffd5ca5d2';
+function wxIcon(id,isDay){
+  if(id>=200&&id<300)return'⛈️';
+  if(id>=300&&id<400)return'🌦️';
+  if(id>=500&&id<600)return'🌧️';
+  if(id>=600&&id<700)return'❄️';
+  if(id>=700&&id<800)return'🌫️';
+  if(id===800)return isDay?'☀️':'🌙';
+  if(id===801)return'🌤️';
+  if(id>=802)return'☁️';
+  return'🌤️';
+}
+async function fetchWeather(){
+  const g=id=>document.getElementById(id);
+  try{
+    const cur=await fetch(`https://api.openweathermap.org/data/2.5/weather?q=Brampton,CA&units=metric&appid=${OWM_KEY}`).then(r=>r.json());
+    const fore=await fetch(`https://api.openweathermap.org/data/2.5/forecast?q=Brampton,CA&units=metric&cnt=24&appid=${OWM_KEY}`).then(r=>r.json());
+    if(cur.cod!==200)throw new Error(cur.message);
+    const temp=Math.round(cur.main.temp);
+    const id=cur.weather[0].id;
+    const isDay=cur.dt>cur.sys.sunrise&&cur.dt<cur.sys.sunset;
+    if(g('wx-icon'))g('wx-icon').textContent=wxIcon(id,isDay);
+    if(g('wx-temp'))g('wx-temp').textContent=temp+'°C';
+    if(g('wx-cond'))g('wx-cond').textContent=cur.weather[0].main+' · Brampton';
+    const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const seen=new Set(),forecast=[];
+    const todayDay=new Date().getDay();
+    for(const item of fore.list){
+      const d=new Date(item.dt*1000);
+      const dn=d.getDay();
+      const dk=d.toDateString();
+      if(!seen.has(dk)&&dn!==todayDay){seen.add(dk);forecast.push({day:days[dn],high:Math.round(item.main.temp_max),id:item.weather[0].id});}
+      if(forecast.length===3)break;
+    }
+    if(g('wx-forecast'))g('wx-forecast').innerHTML=forecast.map(f=>`
+      <div class="wx-day">
+        <div style="font-size:14px">${wxIcon(f.id,true)}</div>
+        <div style="font-size:11px;font-weight:500;margin-top:2px">${f.high}°</div>
+        <div style="font-size:10px;color:var(--tx2)">${f.day}</div>
+      </div>`).join('');
+  }catch(e){
+    const g=id=>document.getElementById(id);
+    if(g('wx-cond'))g('wx-cond').textContent='Weather unavailable';
+    if(g('wx-icon'))g('wx-icon').textContent='—';
+  }
+}
+fetchWeather();
 
-
-
+/* ── THEME ── */
 function toggleTheme(){
   const h=document.documentElement,dark=h.getAttribute('data-theme')==='dark';
   h.setAttribute('data-theme',dark?'light':'dark');
@@ -414,7 +584,7 @@ function toggleTheme(){
 
 /* ── TABS ── */
 function switchTab(t){
-  ['home','tasks','academics','money'].forEach((n,i)=>{
+  ['home','tasks','academics','money','habits'].forEach((n,i)=>{
     document.querySelectorAll('.sbn')[i].classList.toggle('active',n===t);
     document.getElementById('sec-'+n).classList.toggle('active',n===t);
   });
@@ -437,7 +607,7 @@ function stCls(s){return s==='done'?'sd':s==='ip'?'si':'st2'}
 function stLbl(s){return s==='done'?'Done':s==='ip'?'In progress':'To do'}
 
 /* ── RENDER ALL ── */
-function renderAll(){renderHome();renderTasks();renderAcademics();renderMoney();}
+function renderAll(){renderHome();renderTasks();renderAcademics();renderMoney();renderHabits();}
 
 /* ── HOME ── */
 function renderHome(){
@@ -461,10 +631,15 @@ function renderHome(){
   const todos=S.tasks.filter(tk=>tk.date===t);
   if(g('hm-todos'))g('hm-todos').innerHTML=todos.length?todos.map(tk=>`
     <div class="row"><div class="cb${tk.done?' checked':''}" onclick="toggleDone(${tk.id},this)"></div><span class="${tk.done?'strike':''}" style="flex:1">${tk.name}</span><span class="badge ${priCls(tk.pri)}">${tk.pri}</span></div>`).join(''):'<span style="font-size:13px;color:var(--tx2)">No tasks for today.</span>';
-  if(g('hm-savings'))g('hm-savings').innerHTML=S.savings.length?S.savings.map(sv=>{
-    const pct=Math.min(100,Math.round(sv.cur/sv.tgt*100));
-    return`<div class="sg"><div class="sh"><span class="sn">${sv.name}</span><span class="sp">$${sv.cur.toLocaleString()} / $${sv.tgt.toLocaleString()}</span></div><div class="pbg"><div class="pf ${pct>=80?'fg':pct>=50?'fb':'fa'}" style="width:${pct}%"></div></div></div>`;
-  }).join(''):'<span style="font-size:13px;color:var(--tx2)">No savings goals yet.</span>';
+  // Habits on home
+  if(g('hm-habits'))g('hm-habits').innerHTML=S.habits.length?S.habits.map(h=>{
+    const done=h.log&&h.log[t];
+    return`<div class="row">
+      <div class="cb${done?' checked':''}" onclick="toggleHabitHome(${h.id},this)"></div>
+      <span style="flex:1">${h.emoji} ${h.name}</span>
+      <span style="font-size:12px;color:var(--tx2)">🔥 ${h.streak||0}</span>
+    </div>`;
+  }).join(''):'<span style="font-size:13px;color:var(--tx2)">No habits yet. Add some in the Habits tab.</span>';
 }
 
 /* ── TASKS ── */
@@ -617,6 +792,91 @@ function renderMoney(){
     <div class="trow"><span class="tn">${t.name}</span><span class="chip">${t.cat}</span><span class="${t.amt>=0?'inc':'exp'}">${t.amt>=0?'+':''} $${Math.abs(t.amt).toFixed(0)}</span><button class="xbtn" onclick="deleteTxn(${t.id})">✕</button></div>`).join(''):'<span style="font-size:13px;color:var(--tx2)">No transactions yet.</span>';
 }
 
+/* ── HABITS ── */
+const EMOJIS=['🎸','🎵','📚','💪','🧘','🏃','💧','🥗','😴','✍️','🎯','🧠','🌿','☀️','🎨','🎮','📖','🏋️','🚴','🎹','🥋','🧹','💊','🪴','🎤'];
+let selectedEmoji='🎯';
+
+function openHabitModal(){
+  document.getElementById('m-habit-name').value='';
+  selectedEmoji='🎯';
+  const grid=document.getElementById('emoji-grid');
+  grid.innerHTML=EMOJIS.map(e=>`<span class="epick${e===selectedEmoji?' selected':''}" onclick="selectEmoji('${e}',this)">${e}</span>`).join('');
+  openModal('habit-modal');
+}
+function selectEmoji(e,el){
+  selectedEmoji=e;
+  document.querySelectorAll('.epick').forEach(x=>x.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function saveHabit(){
+  const name=document.getElementById('m-habit-name').value.trim();
+  if(!name)return;
+  S.habits.push({id:++S.nid.habit,name,emoji:selectedEmoji,streak:0,log:{}});
+  save();closeModal('habit-modal');renderHabits();renderHome();
+}
+function toggleHabit(id){
+  const h=S.habits.find(h=>h.id===id);if(!h)return;
+  const t=today();
+  if(!h.log)h.log={};
+  if(h.log[t]){
+    delete h.log[t];
+    recalcStreak(h);
+  } else {
+    h.log[t]=true;
+    recalcStreak(h);
+  }
+  save();renderHabits();renderHome();
+}
+function toggleHabitHome(id,el){
+  toggleHabit(id);
+  const h=S.habits.find(h=>h.id===id);
+  if(h){const done=h.log&&h.log[today()];el.classList.toggle('checked',done);const span=el.nextElementSibling;if(span)span.className=done?'strike':'';}
+}
+function recalcStreak(h){
+  let streak=0,d=new Date();
+  // Check today first, if not done start from yesterday
+  if(!h.log[d.toISOString().slice(0,10)])d.setDate(d.getDate()-1);
+  while(true){
+    const key=d.toISOString().slice(0,10);
+    if(h.log[key]){streak++;d.setDate(d.getDate()-1);}
+    else break;
+  }
+  h.streak=streak;
+}
+function deleteHabit(id){S.habits=S.habits.filter(h=>h.id!==id);save();renderHabits();renderHome();}
+function renderHabits(){
+  const t=today();
+  const grid=document.getElementById('habit-grid');
+  const empty=document.getElementById('habit-empty');
+  const lbl=document.getElementById('habit-summary');
+  if(!grid)return;
+  if(!S.habits.length){
+    grid.innerHTML='';
+    if(empty)empty.style.display='block';
+    if(lbl)lbl.textContent='Track your daily habits.';
+    return;
+  }
+  if(empty)empty.style.display='none';
+  const done=S.habits.filter(h=>h.log&&h.log[t]).length;
+  if(lbl)lbl.textContent=`${done} / ${S.habits.length} done today`;
+  // Build last 7 days keys
+  const last7=[];
+  for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last7.push(d.toISOString().slice(0,10));}
+  grid.innerHTML=S.habits.map(h=>{
+    const isDone=h.log&&h.log[t];
+    const dots=last7.map(d=>`<div class="wdot${h.log&&h.log[d]?' filled':''}"></div>`).join('');
+    const isHot=(h.streak||0)>=3;
+    return`<div class="habit-card${isDone?' done':''}" onclick="toggleHabit(${h.id})">
+      <button class="xbtn habit-del" onclick="event.stopPropagation();deleteHabit(${h.id})">✕</button>
+      <div class="habit-emoji">${h.emoji}</div>
+      <div class="habit-name">${h.name}</div>
+      <div class="habit-streak${isHot?' hot':''}">🔥 ${h.streak||0} day streak</div>
+      <div class="week-dots">${dots}</div>
+      <div class="habit-check">${isDone?'✓':''}</div>
+    </div>`;
+  }).join('');
+}
+
 /* ── POMODORO ── */
 let pSec=25*60,pTotal=25*60,pRun=false,pBreak=false,pTimer=null;
 function pRender(){
@@ -634,8 +894,7 @@ function pomoMode(){
   pTotal=pBreak?5*60:25*60;pSec=pTotal;
   document.getElementById('plabel').textContent=pBreak?'Break time':'Focus session';
   document.getElementById('pmode').textContent=pBreak?'Switch to focus':'Switch to break';
-  document.getElementById('pstart').textContent='▶ Start';
-  pRender();
+  document.getElementById('pstart').textContent='▶ Start';pRender();
 }
 
 /* ── INIT ── */
