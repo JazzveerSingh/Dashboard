@@ -236,23 +236,7 @@ textarea.notes:focus{background:var(--bg);border-color:var(--acc)}
           <h1 id="greeting">Good morning ✦</h1>
           <p>Here's what's on today.</p>
         </div>
-        <div class="wx-card">
-          <div style="font-size:28px;line-height:1" id="wx-icon">⏳</div>
-          <div>
-            <div style="font-size:20px;font-weight:600;line-height:1" id="wx-temp">--°C</div>
-            <div style="font-size:11px;color:var(--tx2);margin-top:3px" id="wx-cond">Loading...</div>
-          </div>
-          <div class="wx-sep">
-            <div class="wx-label">Next 3 days</div>
-            <div class="wx-forecast" id="wx-forecast">
-              <div class="wx-day" style="opacity:.4">
-                <div style="font-size:14px">—</div>
-                <div style="font-size:11px;font-weight:500;margin-top:2px">--°</div>
-                <div style="font-size:10px;color:var(--tx2)">---</div>
-              </div>
-            </div>
-          </div>
-        </div>
+
       </div>
       <div class="content">
         <div class="g4">
@@ -404,52 +388,7 @@ updateClock();setInterval(updateClock,10000);
 
 
 
-/* ── WEATHER ── */
-const WMO={0:'Clear',1:'Mostly clear',2:'Partly cloudy',3:'Cloudy',45:'Foggy',48:'Foggy',51:'Drizzle',53:'Drizzle',55:'Drizzle',61:'Rain',63:'Rain',65:'Heavy rain',71:'Snow',73:'Snow',75:'Heavy snow',80:'Showers',81:'Showers',82:'Heavy showers',95:'Thunderstorm',96:'Thunderstorm',99:'Thunderstorm'};
-function wxIcon(code,isDay){
-  if([95,96,99].includes(code))return'⛈️';
-  if([71,73,75].includes(code))return'❄️';
-  if([61,63,65,80,81,82].includes(code))return'🌧️';
-  if([51,53,55].includes(code))return'🌦️';
-  if([45,48].includes(code))return'🌫️';
-  if(code===3)return'☁️';
-  if(code===2)return'⛅';
-  if(code<=1)return isDay?'☀️':'🌙';
-  return'🌤️';
-}
-async function fetchWeather(){
-  const g=id=>document.getElementById(id);
-  try{
-    const proxy='https://corsproxy.io/?url=';
-    const target=encodeURIComponent('https://api.open-meteo.com/v1/forecast?latitude=43.73&longitude=-79.76&current=temperature_2m,weather_code,is_day&daily=weather_code,temperature_2m_max&timezone=America%2FToronto&forecast_days=4');
-    const r=await fetch(proxy+target);
-    const d=await r.json();
-    const temp=Math.round(d.current.temperature_2m);
-    const code=d.current.weather_code;
-    const isDay=d.current.is_day===1;
-    const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    const forecast=d.daily.date.slice(1,4).map((dt,i)=>({
-      day:days[new Date(dt+'T12:00:00').getDay()],
-      high:Math.round(d.daily.temperature_2m_max[i+1]),
-      code:d.daily.weather_code[i+1],
-    }));
-    if(g('wx-icon'))g('wx-icon').textContent=wxIcon(code,isDay);
-    if(g('wx-temp'))g('wx-temp').textContent=temp+'°C';
-    if(g('wx-cond'))g('wx-cond').textContent=(WMO[code]||'Clear')+' · Brampton';
-    if(g('wx-forecast'))g('wx-forecast').innerHTML=forecast.map(f=>`
-      <div class="wx-day">
-        <div style="font-size:14px">${wxIcon(f.code,true)}</div>
-        <div style="font-size:11px;font-weight:500;margin-top:2px">${f.high}°</div>
-        <div style="font-size:10px;color:var(--tx2)">${f.day}</div>
-      </div>`).join('');
-  }catch(e){
-    if(g('wx-cond'))g('wx-cond').textContent='Weather unavailable';
-    if(g('wx-icon'))g('wx-icon').textContent='—';
-  }
-}
-fetchWeather();
 
-/* ── THEME ── */
 function toggleTheme(){
   const h=document.documentElement,dark=h.getAttribute('data-theme')==='dark';
   h.setAttribute('data-theme',dark?'light':'dark');
