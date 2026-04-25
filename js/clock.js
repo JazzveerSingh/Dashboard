@@ -2,7 +2,7 @@ let prevD = {};
 
 function setD(id, v) {
   const c = document.getElementById(id); if (!c) return;
-  const st = c.querySelector('.st'); if (st) st.textContent = v;
+  const st = c.querySelector('.fc-st'); if (st) st.textContent = v;
   c.querySelectorAll('span').forEach(s => s.textContent = v);
   const bt = c.querySelector('.bt'); if (bt) bt.style.transform = 'rotateX(0deg)';
 }
@@ -11,7 +11,7 @@ function flipD(id, ov, nv) {
   if (ov === nv) return;
   const c = document.getElementById(id); if (!c) return;
   try {
-    const tp = c.querySelector('.tp'), bt = c.querySelector('.bt'), st = c.querySelector('.st');
+    const tp = c.querySelector('.tp'), bt = c.querySelector('.bt'), st = c.querySelector('.fc-st');
     if (!tp || !bt || !st) return;
     tp.querySelector('span').textContent = ov;
     bt.querySelector('span').textContent = nv;
@@ -44,7 +44,7 @@ function tickClock() {
     prevD[entry[0]] = entry[1];
   });
   const fd = document.getElementById('fc-date');
-  if (fd) fd.textContent = now.toLocaleDateString('en-CA', { weekday:'short', month:'short', day:'numeric' });
+  if (fd) fd.textContent = now.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
   updateGreeting();
 }
 
@@ -53,7 +53,7 @@ function initClock() {
   prevD = { h0: h[0], h1: h[1], m0: m[0], m1: m[1] };
   Object.entries(prevD).forEach(function (entry) { setD('fc-' + entry[0], entry[1]); });
   const fd = document.getElementById('fc-date');
-  if (fd) fd.textContent = now.toLocaleDateString('en-CA', { weekday:'short', month:'short', day:'numeric' });
+  if (fd) fd.textContent = now.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
   updateGreeting();
   setInterval(tickClock, 10000);
 }
