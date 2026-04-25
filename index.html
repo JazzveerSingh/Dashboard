@@ -53,18 +53,12 @@ body{font-family:var(--f);background:var(--bg);color:var(--tx);min-height:100vh;
 .flip-group{display:flex;gap:3px}
 .flip-card{width:28px;height:38px;position:relative;perspective:200px}
 .flip-card-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d}
-.flip-top,.flip-bottom{position:absolute;width:100%;height:50%;overflow:hidden;background:#1a1a2e;border-radius:4px 4px 0 0}
-.flip-bottom{top:50%;border-radius:0 0 4px 4px;transform-origin:top}
-.flip-top span,.flip-bottom span{position:absolute;width:100%;height:200%;left:0;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;color:#e8e8f0;font-variant-numeric:tabular-nums;font-family:'Inter',monospace}
-.flip-bottom span{top:-100%}
+.flip-top{position:absolute;width:100%;height:50%;overflow:hidden;background:#1a1a2e;border-radius:4px 4px 0 0;transform-origin:bottom;z-index:2}
+.flip-bottom{position:absolute;top:50%;width:100%;height:50%;overflow:hidden;background:#1a1a2e;border-radius:0 0 4px 4px;transform-origin:top;transform:rotateX(90deg);z-index:1}
+.flip-top span{position:absolute;width:100%;height:200%;left:0;top:0;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;color:#e8e8f0;font-variant-numeric:tabular-nums}
+.flip-bottom span{position:absolute;width:100%;height:200%;left:0;bottom:0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:0;font-size:20px;font-weight:600;color:#e8e8f0;font-variant-numeric:tabular-nums;transform:translateY(50%)}
 .flip-colon{font-size:20px;font-weight:600;color:var(--tx2);line-height:38px;margin:0 1px}
 .flip-date{font-size:11px;color:var(--tx2);margin-top:8px}
-
-/* ── FLIP ANIMATION ── */
-@keyframes flipTop{0%{transform:rotateX(0deg)}100%{transform:rotateX(-90deg)}}
-@keyframes flipBottom{0%{transform:rotateX(90deg)}100%{transform:rotateX(0deg)}}
-.flip-card.flipping .flip-top{animation:flipTop .2s ease-in forwards}
-.flip-card.flipping .flip-bottom{animation:flipBottom .2s ease-out .2s forwards}
 
 /* ── HEADER ── */
 .header{padding:24px 32px 0;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px}
@@ -479,52 +473,79 @@ function load(){try{const d=localStorage.getItem('jdash4');if(d)S=JSON.parse(d)}
 load();
 
 /* ── FLIP CLOCK ── */
-let prevH='--',prevM='--';
-const fcIds=['fc-h0','fc-h1','fc-m0','fc-m1'];
-function setFlipDigit(id,newVal,oldVal){
-  if(newVal===oldVal)return;
-  const el=document.getElementById(id);
-  if(!el)return;
-  const top=el.querySelector('.flip-top span');
-  const bot=el.querySelector('.flip-bottom span');
-  // Set new value
-  top.textContent=newVal;
-  bot.textContent=newVal;
-  el.classList.remove('flipping');
-  void el.offsetWidth; // reflow
-  el.classList.add('flipping');
-  setTimeout(()=>el.classList.remove('flipping'),500);
+let prevDigits={h0:'',h1:'',m0:'',m1:''};
+
+function flipDigit(id, oldVal, newVal){
+  if(oldVal===newVal)return;
+  const card=document.getElementById(id);
+  if(!card)return;
+
+  // Structure: upper half shows old value, lower half reveals new value
+  const upper=card.querySelector('.flip-top');
+  const lower=card.querySelector('.flip-bottom');
+  const upperSpan=upper.querySelector('span');
+  const lowerSpan=lower.querySelector('span');
+
+  // Show old on top, new on bottom
+  upperSpan.textContent=oldVal;
+  lowerSpan.textContent=newVal;
+
+  // Reset
+  upper.style.transition='none';
+  upper.style.transform='rotateX(0deg)';
+  lower.style.transition='none';
+  lower.style.transform='rotateX(90deg)';
+  void card.offsetWidth;
+
+  // Animate top flipping down
+  upper.style.transition='transform 0.25s ease-in';
+  upper.style.transform='rotateX(-90deg)';
+
+  // After top is hidden, flip bottom up
+  setTimeout(()=>{
+    upperSpan.textContent=newVal; // update top to new value silently
+    upper.style.transition='none';
+    upper.style.transform='rotateX(0deg)';
+    lower.style.transition='transform 0.25s ease-out';
+    lower.style.transform='rotateX(0deg)';
+  },260);
 }
+
 function updateFlipClock(){
   const now=new Date();
   const h=String(now.getHours()).padStart(2,'0');
   const m=String(now.getMinutes()).padStart(2,'0');
-  if(h!==prevH){
-    setFlipDigit('fc-h0',h[0],prevH[0]);
-    setFlipDigit('fc-h1',h[1],prevH[1]);
-    prevH=h;
-  }
-  if(m!==prevM){
-    setFlipDigit('fc-m0',m[0],prevM[0]);
-    setFlipDigit('fc-m1',m[1],prevM[1]);
-    prevM=m;
-  }
-  // Init display
-  ['fc-h0','fc-h1'].forEach((id,i)=>{
-    const el=document.getElementById(id);
-    if(el){el.querySelector('.flip-top span').textContent=h[i];el.querySelector('.flip-bottom span').textContent=h[i];}
+  const digits={h0:h[0],h1:h[1],m0:m[0],m1:m[1]};
+
+  Object.entries(digits).forEach(([k,v])=>{
+    const prev=prevDigits[k]||v;
+    flipDigit('fc-'+k,prev,v);
+    prevDigits[k]=v;
   });
-  ['fc-m0','fc-m1'].forEach((id,i)=>{
-    const el=document.getElementById(id);
-    if(el){el.querySelector('.flip-top span').textContent=m[i];el.querySelector('.flip-bottom span').textContent=m[i];}
-  });
+
   document.getElementById('flip-date').textContent=now.toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'});
-  const hr=now.getHours();
   const grEl=document.getElementById('greeting');
+  const hr=now.getHours();
   if(grEl)grEl.textContent=hr<12?'Good morning ✦':hr<17?'Good afternoon ✦':'Good evening ✦';
 }
-updateFlipClock();
-setInterval(updateFlipClock,5000);
+
+// Init digits without animation
+function initFlipClock(){
+  const now=new Date();
+  const h=String(now.getHours()).padStart(2,'0');
+  const m=String(now.getMinutes()).padStart(2,'0');
+  [{id:'fc-h0',v:h[0]},{id:'fc-h1',v:h[1]},{id:'fc-m0',v:m[0]},{id:'fc-m1',v:m[1]}].forEach(({id,v})=>{
+    const card=document.getElementById(id);
+    if(!card)return;
+    card.querySelectorAll('span').forEach(s=>s.textContent=v);
+    const lower=card.querySelector('.flip-bottom');
+    lower.style.transform='rotateX(0deg)';
+  });
+  prevDigits={h0:h[0],h1:h[1],m0:m[0],m1:m[1]};
+  document.getElementById('flip-date').textContent=now.toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'});
+}
+initFlipClock();
+setInterval(updateFlipClock,10000);
 
 /* ── WEATHER ── */
 const OWM_KEY='1bab283e1692f04224d8ed4ffd5ca5d2';
