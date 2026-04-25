@@ -51,13 +51,14 @@ body{font-family:var(--f);background:var(--bg);color:var(--tx);min-height:100vh;
 .flip-clock-wrap{padding:14px 16px;margin:8px 12px;background:var(--bg3);border-radius:var(--rl)}
 .flip-clock{display:flex;align-items:center;gap:6px}
 .flip-group{display:flex;gap:3px}
-.flip-card{width:28px;height:38px;position:relative;perspective:200px}
-.flip-card-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d}
-.flip-top{position:absolute;width:100%;height:50%;overflow:hidden;background:#1a1a2e;border-radius:4px 4px 0 0;transform-origin:bottom;z-index:2}
-.flip-bottom{position:absolute;top:50%;width:100%;height:50%;overflow:hidden;background:#1a1a2e;border-radius:0 0 4px 4px;transform-origin:top;transform:rotateX(90deg);z-index:1}
-.flip-top span{position:absolute;width:100%;height:200%;left:0;top:0;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;color:#e8e8f0;font-variant-numeric:tabular-nums}
-.flip-bottom span{position:absolute;width:100%;height:200%;left:0;bottom:0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:0;font-size:20px;font-weight:600;color:#e8e8f0;font-variant-numeric:tabular-nums;transform:translateY(50%)}
-.flip-colon{font-size:20px;font-weight:600;color:var(--tx2);line-height:38px;margin:0 1px}
+.flip-card{width:28px;height:40px;position:relative;perspective:300px;cursor:default}
+.flip-card .static{position:absolute;inset:0;background:#1a1a2e;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;color:#e8e8f0;font-variant-numeric:tabular-nums;border:0.5px solid rgba(255,255,255,0.05)}
+.flip-card .flap{position:absolute;left:0;right:0;height:50%;overflow:hidden;background:#222240;transform-origin:bottom;backface-visibility:hidden;border-radius:4px 4px 0 0}
+.flip-card .flap.bottom-flap{top:50%;transform-origin:top;border-radius:0 0 4px 4px;transform:rotateX(-90deg)}
+.flip-card .flap span{position:absolute;width:100%;height:200%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;color:#e8e8f0;font-variant-numeric:tabular-nums}
+.flip-card .flap.bottom-flap span{bottom:0;top:auto;align-items:flex-end}
+.flip-card .divider{position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(0,0,0,0.4);z-index:10}
+.flip-colon{font-size:20px;font-weight:700;color:var(--tx2);line-height:40px;margin:0 1px}
 .flip-date{font-size:11px;color:var(--tx2);margin-top:8px}
 
 /* ── HEADER ── */
@@ -153,6 +154,236 @@ input:focus,select:focus,textarea:focus{border-color:var(--acc);box-shadow:0 0 0
 textarea.notes{width:100%;min-height:60px;margin-top:12px;resize:vertical;background:var(--bg3);border-color:transparent;border-radius:var(--r);font-size:12px;color:var(--tx2)}
 textarea.notes:focus{background:var(--bg);border-color:var(--acc)}
 
+/* ── HABIT VISUALIZATIONS ── */
+function getDayKey(daysAgo){
+  const d=new Date();d.setDate(d.getDate()-daysAgo);return d.toISOString().slice(0,10);
+}
+function getLast(n){
+  const keys=[];for(let i=n-1;i>=0;i--)keys.push(getDayKey(i));return keys;
+}
+
+function drawLineChart(){
+  const canvas=document.getElementById('chart-line');
+  if(!canvas||!S.habits.length)return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.offsetWidth||canvas.parentElement.offsetWidth||400;
+  const H=140;
+  canvas.width=W*devicePixelRatio;canvas.height=H*devicePixelRatio;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.scale(devicePixelRatio,devicePixelRatio);
+  ctx.clearRect(0,0,W,H);
+
+  const days=getLast(30);
+  const rates=days.map(d=>{
+    const done=S.habits.filter(h=>h.log&&h.log[d]).length;
+    return S.habits.length?done/S.habits.length:0;
+  });
+
+  const pad={t:10,r:10,b:24,l:30};
+  const cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
+
+  // Grid lines
+  const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+  const gridColor=isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.06)';
+  const txColor=isDark?'#8888a0':'#7a7a8a';
+  ctx.strokeStyle=gridColor;ctx.lineWidth=1;
+  [0,0.25,0.5,0.75,1].forEach(v=>{
+    const y=pad.t+ch*(1-v);
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+cw,y);ctx.stroke();
+    ctx.fillStyle=txColor;ctx.font='9px Inter,sans-serif';ctx.textAlign='right';
+    ctx.fillText(Math.round(v*100)+'%',pad.l-4,y+3);
+  });
+
+  // X labels (every 5 days)
+  ctx.fillStyle=txColor;ctx.font='9px Inter,sans-serif';ctx.textAlign='center';
+  days.forEach((d,i)=>{
+    if(i%5===0){
+      const x=pad.l+i*(cw/(days.length-1));
+      const label=new Date(d+'T12:00:00').toLocaleDateString('en-CA',{month:'short',day:'numeric'});
+      ctx.fillText(label,x,H-6);
+    }
+  });
+
+  // Fill area
+  const grad=ctx.createLinearGradient(0,pad.t,0,pad.t+ch);
+  grad.addColorStop(0,'rgba(108,99,255,0.3)');
+  grad.addColorStop(1,'rgba(108,99,255,0)');
+  ctx.beginPath();
+  rates.forEach((r,i)=>{
+    const x=pad.l+i*(cw/(rates.length-1));
+    const y=pad.t+ch*(1-r);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.lineTo(pad.l+cw,pad.t+ch);ctx.lineTo(pad.l,pad.t+ch);ctx.closePath();
+  ctx.fillStyle=grad;ctx.fill();
+
+  // Line
+  ctx.beginPath();ctx.strokeStyle='#6c63ff';ctx.lineWidth=2;ctx.lineJoin='round';
+  rates.forEach((r,i)=>{
+    const x=pad.l+i*(cw/(rates.length-1));
+    const y=pad.t+ch*(1-r);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  // Dots
+  rates.forEach((r,i)=>{
+    const x=pad.l+i*(cw/(rates.length-1));
+    const y=pad.t+ch*(1-r);
+    ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);
+    ctx.fillStyle='#6c63ff';ctx.fill();
+    ctx.strokeStyle=isDark?'#1c1c26':'#fff';ctx.lineWidth=1.5;ctx.stroke();
+  });
+}
+
+function drawBarChart(){
+  const canvas=document.getElementById('chart-bar');
+  if(!canvas||!S.habits.length)return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.offsetWidth||canvas.parentElement.offsetWidth||400;
+  const H=140;
+  canvas.width=W*devicePixelRatio;canvas.height=H*devicePixelRatio;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.scale(devicePixelRatio,devicePixelRatio);
+  ctx.clearRect(0,0,W,H);
+
+  const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+  const txColor=isDark?'#8888a0':'#7a7a8a';
+  const gridColor=isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.06)';
+  const counts=S.habits.map(h=>Object.keys(h.log||{}).length);
+  const maxC=Math.max(...counts,1);
+  const pad={t:10,r:10,b:28,l:30};
+  const cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
+  const bw=Math.min(32,(cw/S.habits.length)*0.6);
+  const gap=cw/S.habits.length;
+  const colors=['#6c63ff','#4a90d9','#4caf7d','#e8a838','#e05c5c','#a09df7','#7dd4a8'];
+
+  // Grid
+  [0,0.25,0.5,0.75,1].forEach(v=>{
+    const y=pad.t+ch*(1-v);
+    ctx.strokeStyle=gridColor;ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+cw,y);ctx.stroke();
+    ctx.fillStyle=txColor;ctx.font='9px Inter,sans-serif';ctx.textAlign='right';
+    ctx.fillText(Math.round(v*maxC),pad.l-4,y+3);
+  });
+
+  S.habits.forEach((h,i)=>{
+    const x=pad.l+gap*i+(gap-bw)/2;
+    const barH=(counts[i]/maxC)*ch;
+    const y=pad.t+ch-barH;
+    // Bar with rounded top
+    ctx.fillStyle=colors[i%colors.length];
+    ctx.beginPath();
+    const r=4;
+    ctx.moveTo(x+r,y);ctx.lineTo(x+bw-r,y);
+    ctx.quadraticCurveTo(x+bw,y,x+bw,y+r);
+    ctx.lineTo(x+bw,y+barH);ctx.lineTo(x,y+barH);ctx.lineTo(x,y+r);
+    ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();ctx.fill();
+    // Label
+    ctx.fillStyle=txColor;ctx.font='10px Inter,sans-serif';ctx.textAlign='center';
+    const label=h.emoji;
+    ctx.fillText(label,x+bw/2,H-8);
+    ctx.fillText(counts[i],x+bw/2,y-3);
+  });
+}
+
+function buildHeatmap(container, logDays, title){
+  // 90 days heatmap
+  const totalDays=90;
+  const now=new Date();
+  // Find the Sunday on or before totalDays ago
+  const startDate=new Date(now);
+  startDate.setDate(startDate.getDate()-(totalDays-1));
+  // Align to week start (Sunday)
+  const dow=startDate.getDay();
+  startDate.setDate(startDate.getDate()-dow);
+
+  // Build weeks
+  const weeks=[];
+  let d=new Date(startDate);
+  while(d<=now){
+    const week=[];
+    for(let i=0;i<7;i++){
+      week.push(new Date(d));
+      d.setDate(d.getDate()+1);
+    }
+    weeks.push(week);
+  }
+
+  const maxVal=typeof logDays[Object.keys(logDays)[0]]==='number'
+    ? Math.max(...Object.values(logDays),1)
+    : 1;
+
+  // Month labels
+  const monthLabels=weeks.map(w=>{
+    const first=w[0];
+    return first.getDate()<=7?first.toLocaleDateString('en-CA',{month:'short'}):'';
+  });
+
+  let html=`<div class="heatmap-wrap"><div style="display:flex;gap:0">`;
+  // Day labels
+  html+=`<div class="heatmap-days" style="margin-top:18px">`;
+  ['S','M','T','W','T','F','S'].forEach(l=>html+=`<div class="heatmap-day-label">${l}</div>`);
+  html+=`</div>`;
+
+  // Grid + month labels
+  html+=`<div><div class="heatmap-months">`;
+  monthLabels.forEach(l=>html+=`<div style="width:15px;text-align:center">${l}</div>`);
+  html+=`</div><div class="heatmap-grid">`;
+  weeks.forEach(week=>{
+    html+=`<div class="heatmap-col">`;
+    week.forEach(day=>{
+      const key=day.toISOString().slice(0,10);
+      const isFuture=day>now;
+      let lvl=0;
+      if(!isFuture&&logDays[key]){
+        const v=typeof logDays[key]==='number'?logDays[key]/maxVal:1;
+        lvl=v>=0.75?4:v>=0.5?3:v>=0.25?2:1;
+      }
+      const title2=day.toLocaleDateString('en-CA',{month:'short',day:'numeric',year:'numeric'});
+      html+=`<div class="heatmap-cell${lvl?' l'+lvl:''}" title="${title2}"></div>`;
+    });
+    html+=`</div>`;
+  });
+  html+=`</div></div></div></div>`;
+  container.innerHTML=html;
+}
+
+function renderHabitViz(){
+  const viz=document.getElementById('habit-viz');
+  if(!S.habits.length){if(viz)viz.style.display='none';return;}
+  if(viz)viz.style.display='block';
+
+  // Small delay to ensure canvas is laid out
+  setTimeout(()=>{
+    drawLineChart();
+    drawBarChart();
+  },50);
+
+  // Overall heatmap — value = number of habits done that day
+  const allLog={};
+  getLast(90).forEach(d=>{
+    const cnt=S.habits.filter(h=>h.log&&h.log[d]).length;
+    if(cnt>0)allLog[d]=cnt;
+  });
+  const allContainer=document.getElementById('heatmap-all');
+  if(allContainer)buildHeatmap(allContainer,allLog,'Overall');
+
+  // Per-habit heatmaps
+  const perContainer=document.getElementById('per-habit-heatmaps');
+  if(perContainer){
+    perContainer.innerHTML=S.habits.map(h=>`
+      <div class="card per-habit-hm">
+        <div class="per-habit-hm-title"><span>${h.emoji}</span><span>${h.name}</span><span style="font-size:12px;color:var(--tx2);margin-left:auto">🔥 ${h.streak||0} day streak</span></div>
+        <div id="hm-${h.id}"></div>
+      </div>`).join('');
+    S.habits.forEach(h=>{
+      const el=document.getElementById('hm-'+h.id);
+      if(el)buildHeatmap(el,h.log||{},h.name);
+    });
+  }
+}
+
 /* ── POMODORO ── */
 .pomo-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;padding:12px 0}
 .ptime{font-size:52px;font-weight:300;letter-spacing:4px;color:var(--tx);font-variant-numeric:tabular-nums}
@@ -176,6 +407,25 @@ textarea.notes:focus{background:var(--bg);border-color:var(--acc)}
 .week-dots{display:flex;gap:3px}
 .wdot{width:6px;height:6px;border-radius:50%;background:var(--bg3)}
 .wdot.filled{background:var(--acc)}
+
+/* ── HEATMAP ── */
+.heatmap-wrap{overflow-x:auto;padding-bottom:4px}
+.heatmap-grid{display:flex;gap:3px;align-items:flex-start}
+.heatmap-col{display:flex;flex-direction:column;gap:3px}
+.heatmap-cell{width:12px;height:12px;border-radius:2px;background:var(--bg3);transition:background .2s;cursor:default;flex-shrink:0}
+.heatmap-cell:hover{outline:1.5px solid var(--acc)}
+.heatmap-cell.l1{background:rgba(108,99,255,0.2)}
+.heatmap-cell.l2{background:rgba(108,99,255,0.45)}
+.heatmap-cell.l3{background:rgba(108,99,255,0.7)}
+.heatmap-cell.l4{background:rgba(108,99,255,1)}
+.heatmap-months{display:flex;gap:3px;margin-bottom:4px;font-size:10px;color:var(--tx2)}
+.heatmap-days{display:flex;flex-direction:column;gap:3px;margin-right:4px;font-size:10px;color:var(--tx2);padding-top:0}
+.heatmap-day-label{height:12px;line-height:12px}
+.per-habit-hm{margin-bottom:8px}
+.per-habit-hm-title{font-size:13px;font-weight:500;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+
+/* ── CANVAS CHART ── */
+.chart-tooltip{position:absolute;background:var(--bg);border:0.5px solid var(--bd);border-radius:var(--r);padding:6px 10px;font-size:12px;color:var(--tx);pointer-events:none;display:none;box-shadow:var(--shadow);white-space:nowrap;z-index:10}
 
 /* ── MODAL ── */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center}
@@ -262,15 +512,15 @@ textarea.notes:focus{background:var(--bg);border-color:var(--acc)}
     </div>
     <!-- FLIP CLOCK -->
     <div class="flip-clock-wrap">
-      <div class="flip-clock" id="flip-clock">
+              <div class="flip-clock" id="flip-clock">
         <div class="flip-group">
-          <div class="flip-card" id="fc-h0"><div class="flip-top"><span>0</span></div><div class="flip-bottom"><span>0</span></div></div>
-          <div class="flip-card" id="fc-h1"><div class="flip-top"><span>0</span></div><div class="flip-bottom"><span>0</span></div></div>
+          <div class="flip-card" id="fc-h0"><div class="static">0</div><div class="flap top-flap"><span>0</span></div><div class="flap bottom-flap"><span>0</span></div><div class="divider"></div></div>
+          <div class="flip-card" id="fc-h1"><div class="static">0</div><div class="flap top-flap"><span>0</span></div><div class="flap bottom-flap"><span>0</span></div><div class="divider"></div></div>
         </div>
         <div class="flip-colon">:</div>
         <div class="flip-group">
-          <div class="flip-card" id="fc-m0"><div class="flip-top"><span>0</span></div><div class="flip-bottom"><span>0</span></div></div>
-          <div class="flip-card" id="fc-m1"><div class="flip-top"><span>0</span></div><div class="flip-bottom"><span>0</span></div></div>
+          <div class="flip-card" id="fc-m0"><div class="static">0</div><div class="flap top-flap"><span>0</span></div><div class="flap bottom-flap"><span>0</span></div><div class="divider"></div></div>
+          <div class="flip-card" id="fc-m1"><div class="static">0</div><div class="flap top-flap"><span>0</span></div><div class="flap bottom-flap"><span>0</span></div><div class="divider"></div></div>
         </div>
       </div>
       <div class="flip-date" id="flip-date"></div>
@@ -455,6 +705,28 @@ textarea.notes:focus{background:var(--bg);border-color:var(--acc)}
           <div style="font-size:14px;font-weight:500;margin-bottom:6px">No habits yet</div>
           <div style="font-size:13px">Add a habit to start building your streaks.</div>
         </div>
+        <!-- VISUALIZATIONS -->
+        <div id="habit-viz" style="display:none">
+          <div class="g2">
+            <div class="card">
+              <div class="st">Daily completion rate — last 30 days</div>
+              <div style="position:relative;height:140px">
+                <canvas id="chart-line" style="width:100%;height:100%"></canvas>
+              </div>
+            </div>
+            <div class="card">
+              <div class="st">Total completions per habit</div>
+              <div style="position:relative;height:140px">
+                <canvas id="chart-bar" style="width:100%;height:100%"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="st">Overall heatmap — last 3 months</div>
+            <div id="heatmap-all"></div>
+          </div>
+          <div id="per-habit-heatmaps"></div>
+        </div>
       </div>
     </div>
 
@@ -475,74 +747,76 @@ load();
 /* ── FLIP CLOCK ── */
 let prevDigits={h0:'',h1:'',m0:'',m1:''};
 
+function setDigit(id, val){
+  const card=document.getElementById(id);
+  if(!card)return;
+  card.querySelector('.static').textContent=val;
+  card.querySelectorAll('.flap span').forEach(s=>s.textContent=val);
+}
+
 function flipDigit(id, oldVal, newVal){
   if(oldVal===newVal)return;
   const card=document.getElementById(id);
   if(!card)return;
+  const topFlap=card.querySelector('.top-flap');
+  const botFlap=card.querySelector('.bottom-flap');
+  const staticEl=card.querySelector('.static');
 
-  // Structure: upper half shows old value, lower half reveals new value
-  const upper=card.querySelector('.flip-top');
-  const lower=card.querySelector('.flip-bottom');
-  const upperSpan=upper.querySelector('span');
-  const lowerSpan=lower.querySelector('span');
-
-  // Show old on top, new on bottom
-  upperSpan.textContent=oldVal;
-  lowerSpan.textContent=newVal;
-
-  // Reset
-  upper.style.transition='none';
-  upper.style.transform='rotateX(0deg)';
-  lower.style.transition='none';
-  lower.style.transform='rotateX(90deg)';
+  // Top flap shows old value folding down
+  topFlap.querySelector('span').textContent=oldVal;
+  staticEl.textContent=oldVal;
+  topFlap.style.transition='none';
+  topFlap.style.transform='rotateX(0deg)';
+  botFlap.style.transition='none';
+  botFlap.style.transform='rotateX(-90deg)';
+  botFlap.querySelector('span').textContent=newVal;
   void card.offsetWidth;
 
-  // Animate top flipping down
-  upper.style.transition='transform 0.25s ease-in';
-  upper.style.transform='rotateX(-90deg)';
+  // Fold top down
+  topFlap.style.transition='transform 0.2s ease-in';
+  topFlap.style.transform='rotateX(90deg)';
 
-  // After top is hidden, flip bottom up
   setTimeout(()=>{
-    upperSpan.textContent=newVal; // update top to new value silently
-    upper.style.transition='none';
-    upper.style.transform='rotateX(0deg)';
-    lower.style.transition='transform 0.25s ease-out';
-    lower.style.transform='rotateX(0deg)';
-  },260);
+    // Switch static to new value
+    staticEl.textContent=newVal;
+    topFlap.style.transition='none';
+    topFlap.style.transform='rotateX(0deg)';
+    topFlap.querySelector('span').textContent=newVal;
+    // Unfold bottom
+    botFlap.style.transition='transform 0.2s ease-out';
+    botFlap.style.transform='rotateX(0deg)';
+    setTimeout(()=>{
+      botFlap.style.transition='none';
+      botFlap.style.transform='rotateX(-90deg)';
+    },220);
+  },220);
 }
 
 function updateFlipClock(){
   const now=new Date();
   const h=String(now.getHours()).padStart(2,'0');
   const m=String(now.getMinutes()).padStart(2,'0');
-  const digits={h0:h[0],h1:h[1],m0:m[0],m1:m[1]};
-
-  Object.entries(digits).forEach(([k,v])=>{
-    const prev=prevDigits[k]||v;
-    flipDigit('fc-'+k,prev,v);
+  const cur={h0:h[0],h1:h[1],m0:m[0],m1:m[1]};
+  Object.entries(cur).forEach(([k,v])=>{
+    flipDigit('fc-'+k, prevDigits[k]||v, v);
     prevDigits[k]=v;
   });
-
   document.getElementById('flip-date').textContent=now.toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'});
   const grEl=document.getElementById('greeting');
   const hr=now.getHours();
   if(grEl)grEl.textContent=hr<12?'Good morning ✦':hr<17?'Good afternoon ✦':'Good evening ✦';
 }
 
-// Init digits without animation
 function initFlipClock(){
   const now=new Date();
   const h=String(now.getHours()).padStart(2,'0');
   const m=String(now.getMinutes()).padStart(2,'0');
-  [{id:'fc-h0',v:h[0]},{id:'fc-h1',v:h[1]},{id:'fc-m0',v:m[0]},{id:'fc-m1',v:m[1]}].forEach(({id,v})=>{
-    const card=document.getElementById(id);
-    if(!card)return;
-    card.querySelectorAll('span').forEach(s=>s.textContent=v);
-    const lower=card.querySelector('.flip-bottom');
-    lower.style.transform='rotateX(0deg)';
-  });
   prevDigits={h0:h[0],h1:h[1],m0:m[0],m1:m[1]};
+  Object.entries(prevDigits).forEach(([k,v])=>setDigit('fc-'+k,v));
   document.getElementById('flip-date').textContent=now.toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'});
+  const grEl=document.getElementById('greeting');
+  const hr=now.getHours();
+  if(grEl)grEl.textContent=hr<12?'Good morning ✦':hr<17?'Good afternoon ✦':'Good evening ✦';
 }
 initFlipClock();
 setInterval(updateFlipClock,10000);
@@ -601,6 +875,7 @@ function toggleTheme(){
   const h=document.documentElement,dark=h.getAttribute('data-theme')==='dark';
   h.setAttribute('data-theme',dark?'light':'dark');
   document.getElementById('theme-btn').textContent=dark?'🌙 Dark mode':'☀️ Light mode';
+  setTimeout(()=>{drawLineChart();drawBarChart();},50);
 }
 
 /* ── TABS ── */
@@ -883,6 +1158,7 @@ function renderHabits(){
   // Build last 7 days keys
   const last7=[];
   for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last7.push(d.toISOString().slice(0,10));}
+  renderHabitViz();
   grid.innerHTML=S.habits.map(h=>{
     const isDone=h.log&&h.log[t];
     const dots=last7.map(d=>`<div class="wdot${h.log&&h.log[d]?' filled':''}"></div>`).join('');
