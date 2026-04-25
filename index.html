@@ -47,6 +47,31 @@ body{font-family:var(--f);background:var(--bg);color:var(--tx);min-height:100vh;
 .sb-divider{height:0.5px;background:var(--bd);margin:8px 20px}
 .sb-bottom{padding:12px}
 
+/* ── PROFILE ── */
+const PROFILE_EMOJIS=['🎸','🎵','🎹','🎤','🏃','💪','🧠','📚','💻','🎯','🌙','⚡','🔥','🌿','🎨','🐉','🦊','🐺','🌊','🚀','✨','🎮','🎲','🏀','⚽'];
+function openProfileEdit(){
+  document.getElementById('m-profile-name').value=S.profile.name||'';
+  selectedEmoji=S.profile.avatar||'🎸';
+  const grid=document.getElementById('profile-emoji-grid');
+  grid.innerHTML=PROFILE_EMOJIS.map(e=>`<span class="epick${e===selectedEmoji?' selected':''}" onclick="selectEmoji('${e}',this)">${e}</span>`).join('');
+  openModal('profile-modal');
+}
+function saveProfile(){
+  const name=document.getElementById('m-profile-name').value.trim();
+  if(!name)return;
+  S.profile={name,avatar:selectedEmoji};
+  document.getElementById('sb-name').textContent=name;
+  document.getElementById('sb-avatar').textContent=selectedEmoji;
+  save();closeModal('profile-modal');
+}
+function applyProfile(){
+  if(!S.profile)return;
+  const n=document.getElementById('sb-name');
+  const a=document.getElementById('sb-avatar');
+  if(n)n.textContent=S.profile.name||'Jazz';
+  if(a)a.textContent=S.profile.avatar||'🎸';
+}
+
 /* ── FLIP CLOCK ── */
 .flip-clock-wrap{padding:14px 16px;margin:8px 12px;background:var(--bg3);border-radius:var(--rl)}
 .flip-clock{display:flex;align-items:center;gap:6px}
@@ -495,9 +520,9 @@ function renderHabitViz(){
 <div class="shell">
   <!-- SIDEBAR -->
   <div class="sidebar">
-    <div class="sb-top">
-      <div class="sb-avatar">🎸</div>
-      <div class="sb-name">Jazz</div>
+    <div class="sb-top" style="cursor:pointer" onclick="openProfileEdit()" title="Click to edit profile">
+      <div class="sb-avatar" id="sb-avatar">🎸</div>
+      <div class="sb-name" id="sb-name">Jazz</div>
     </div>
     <!-- FLIP CLOCK -->
     <div class="flip-clock-wrap">
@@ -738,8 +763,8 @@ function renderHabitViz(){
 <script>
 /* ── STATE ── */
 let S={
-  tasks:[],courses:[],txns:[],savings:[],
-  habits:[],
+  tasks:[],courses:[],txns:[],savings:[],habits:[],
+  profile:{name:'Jazz',avatar:'🎸'},
   nid:{task:0,course:0,assign:0,saving:0,txn:0,habit:0},
 };
 function save(){try{localStorage.setItem('jdash4',JSON.stringify(S))}catch(e){}}
@@ -1263,6 +1288,7 @@ function pomoMode(){
 }
 
 /* ── INIT ── */
+applyProfile();
 renderAll();
 </script>
 </body>
