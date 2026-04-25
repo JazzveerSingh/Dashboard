@@ -3,6 +3,7 @@ async function signIn() {
   const password = document.getElementById('auth-password').value;
   const btn = document.getElementById('auth-signin-btn');
   btn.textContent = 'Signing in…'; btn.disabled = true;
+  document.getElementById('auth-error').style.display = 'none';
   const { data, error } = await db.auth.signInWithPassword({ email, password });
   btn.textContent = 'Sign in'; btn.disabled = false;
   if (error) return showAuthError(error.message);
@@ -12,8 +13,11 @@ async function signIn() {
 async function signUp() {
   const email = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value;
+  if (!email || !password) return showAuthError('Please enter an email and password.');
+  if (password.length < 6) return showAuthError('Password must be at least 6 characters.');
   const btn = document.getElementById('auth-signup-btn');
   btn.textContent = 'Creating account…'; btn.disabled = true;
+  document.getElementById('auth-error').style.display = 'none';
   const { data, error } = await db.auth.signUp({ email, password });
   btn.textContent = 'Create account'; btn.disabled = false;
   if (error) return showAuthError(error.message);
