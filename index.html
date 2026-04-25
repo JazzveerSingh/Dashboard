@@ -370,18 +370,7 @@ function renderHabitViz(){
   if(allContainer)buildHeatmap(allContainer,allLog,'Overall');
 
   // Per-habit heatmaps
-  const perContainer=document.getElementById('per-habit-heatmaps');
-  if(perContainer){
-    perContainer.innerHTML=S.habits.map(h=>`
-      <div class="card per-habit-hm">
-        <div class="per-habit-hm-title"><span>${h.emoji}</span><span>${h.name}</span><span style="font-size:12px;color:var(--tx2);margin-left:auto">🔥 ${h.streak||0} day streak</span></div>
-        <div id="hm-${h.id}"></div>
-      </div>`).join('');
-    S.habits.forEach(h=>{
-      const el=document.getElementById('hm-'+h.id);
-      if(el)buildHeatmap(el,h.log||{},h.name);
-    });
-  }
+
 }
 
 /* ── POMODORO ── */
@@ -725,7 +714,6 @@ function renderHabitViz(){
             <div class="st">Overall heatmap — last 3 months</div>
             <div id="heatmap-all"></div>
           </div>
-          <div id="per-habit-heatmaps"></div>
         </div>
       </div>
     </div>
