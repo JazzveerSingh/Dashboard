@@ -31,10 +31,8 @@ async function onSignIn(user) {
   S.userId = user.id;
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
-  showLoading();
   await ensureProfile();
   await loadAll();
-  hideLoading();
   applyProfile();
   initClock();
   fetchWx();
@@ -52,17 +50,8 @@ async function ensureProfile() {
 
 function showAuthError(msg) {
   const el = document.getElementById('auth-error');
-  el.textContent = msg; el.style.display = 'block';
-}
-
-function showLoading() {
-  const main = document.querySelector('.main');
-  if (main) main.innerHTML = '<div class="loading"><div class="spinner"></div>Loading your dashboard…</div>';
-}
-
-function hideLoading() {
-  const main = document.querySelector('.main');
-  if (main) main.innerHTML = document.getElementById('app').querySelector('.main').innerHTML;
+  el.textContent = msg;
+  el.style.display = 'block';
 }
 
 // Check for existing session on page load
