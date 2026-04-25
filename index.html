@@ -581,6 +581,20 @@ function renderHabitViz(){
             <div id="hm-habits"><span style="font-size:13px;color:var(--tx2)">No habits yet.</span></div>
           </div>
         </div>
+        <div class="card" id="hm-home-card" style="display:none">
+          <div class="g2" style="margin-bottom:0">
+            <div>
+              <div class="st">Habit completion — last 30 days</div>
+              <div style="position:relative;height:130px">
+                <canvas id="chart-line-home"></canvas>
+              </div>
+            </div>
+            <div>
+              <div class="st">Overall heatmap</div>
+              <div id="heatmap-home"></div>
+            </div>
+          </div>
+        </div>
         <div class="card">
           <div class="st">Pomodoro timer</div>
           <div class="pomo-wrap">
@@ -915,8 +929,74 @@ function renderHome(){
   const todos=S.tasks.filter(tk=>tk.date===t);
   if(g('hm-todos'))g('hm-todos').innerHTML=todos.length?todos.map(tk=>`
     <div class="row"><div class="cb${tk.done?' checked':''}" onclick="toggleDone(${tk.id},this)"></div><span class="${tk.done?'strike':''}" style="flex:1">${tk.name}</span><span class="badge ${priCls(tk.pri)}">${tk.pri}</span></div>`).join(''):'<span style="font-size:13px;color:var(--tx2)">No tasks for today.</span>';
-  // Habits on home
-  if(g('hm-habits'))g('hm-habits').innerHTML=S.habits.length?S.habits.map(h=>{
+  // Home habit viz
+  const hmHomeCard=document.getElementById('hm-home-card');
+  if(hmHomeCard){
+    if(S.habits.length){
+      hmHomeCard.style.display='block';
+      setTimeout(()=>{
+        // Line chart
+        const canvas=document.getElementById('chart-line-home');
+        if(canvas){
+          const W=canvas.offsetWidth||canvas.parentElement.offsetWidth||400;
+          const H=130;
+          canvas.width=W*devicePixelRatio;canvas.height=H*devicePixelRatio;
+          canvas.style.width=W+'px';canvas.style.height=H+'px';
+          const ctx=canvas.getContext('2d');
+          ctx.scale(devicePixelRatio,devicePixelRatio);
+          ctx.clearRect(0,0,W,H);
+          const days=getLast(30);
+          const rates=days.map(d=>{
+            const done=S.habits.filter(h=>h.log&&h.log[d]).length;
+            return S.habits.length?done/S.habits.length:0;
+          });
+          const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+          const txColor=isDark?'#8888a0':'#7a7a8a';
+          const gridColor=isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.06)';
+          const pad={t:8,r:8,b:22,l:28};
+          const cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
+          [0,0.5,1].forEach(v=>{
+            const y=pad.t+ch*(1-v);
+            ctx.strokeStyle=gridColor;ctx.lineWidth=1;
+            ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+cw,y);ctx.stroke();
+            ctx.fillStyle=txColor;ctx.font='9px Inter,sans-serif';ctx.textAlign='right';
+            ctx.fillText(Math.round(v*100)+'%',pad.l-4,y+3);
+          });
+          days.forEach((d,i)=>{
+            if(i%5===0){
+              const x=pad.l+i*(cw/(days.length-1));
+              ctx.fillStyle=txColor;ctx.font='9px Inter,sans-serif';ctx.textAlign='center';
+              ctx.fillText(new Date(d+'T12:00:00').toLocaleDateString('en-CA',{month:'short',day:'numeric'}),x,H-4);
+            }
+          });
+          const grad=ctx.createLinearGradient(0,pad.t,0,pad.t+ch);
+          grad.addColorStop(0,'rgba(108,99,255,0.3)');grad.addColorStop(1,'rgba(108,99,255,0)');
+          ctx.beginPath();
+          rates.forEach((r,i)=>{const x=pad.l+i*(cw/(rates.length-1));const y=pad.t+ch*(1-r);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+          ctx.lineTo(pad.l+cw,pad.t+ch);ctx.lineTo(pad.l,pad.t+ch);ctx.closePath();
+          ctx.fillStyle=grad;ctx.fill();
+          ctx.beginPath();ctx.strokeStyle='#6c63ff';ctx.lineWidth=2;ctx.lineJoin='round';
+          rates.forEach((r,i)=>{const x=pad.l+i*(cw/(rates.length-1));const y=pad.t+ch*(1-r);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+          ctx.stroke();
+          rates.forEach((r,i)=>{
+            const x=pad.l+i*(cw/(rates.length-1));const y=pad.t+ch*(1-r);
+            ctx.beginPath();ctx.arc(x,y,2.5,0,Math.PI*2);
+            ctx.fillStyle='#6c63ff';ctx.fill();
+            ctx.strokeStyle=isDark?'#1c1c26':'#fff';ctx.lineWidth=1.5;ctx.stroke();
+          });
+        }
+        // Heatmap
+        const hmHome=document.getElementById('heatmap-home');
+        if(hmHome){
+          const allLog={};
+          getLast(90).forEach(d=>{const cnt=S.habits.filter(h=>h.log&&h.log[d]).length;if(cnt>0)allLog[d]=cnt;});
+          buildHeatmap(hmHome,allLog,S.habits.length);
+        }
+      },50);
+    } else {
+      hmHomeCard.style.display='none';
+    }
+  }  if(g('hm-habits'))g('hm-habits').innerHTML=S.habits.length?S.habits.map(h=>{
     const done=h.log&&h.log[t];
     return`<div class="row">
       <div class="cb${done?' checked':''}" onclick="toggleHabitHome(${h.id},this)"></div>
