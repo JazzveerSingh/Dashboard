@@ -63,7 +63,7 @@ body { font-family:var(--f); background:var(--bg); color:var(--tx); font-size:14
 .fc-row { display:flex; align-items:center; gap:4px; }
 .fc-grp { display:flex; gap:2px; }
 .fcd { width:26px; height:36px; position:relative; perspective:200px; }
-.fcd .st { position:absolute; inset:0; background:#14142a; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:600; color:#e8e8f8; font-variant-numeric:tabular-nums; border:0.5px solid rgba(255,255,255,0.05); }
+.fcd .fc-st { position:absolute; inset:0; background:#14142a; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:600; color:#e8e8f8; font-variant-numeric:tabular-nums; border:0.5px solid rgba(255,255,255,0.05); }
 .fcd .tp { position:absolute; left:0; right:0; height:50%; overflow:hidden; background:#1c1c38; border-radius:4px 4px 0 0; transform-origin:bottom; z-index:2; }
 .fcd .bt { position:absolute; top:50%; left:0; right:0; height:50%; overflow:hidden; background:#1c1c38; border-radius:0 0 4px 4px; transform-origin:top; z-index:1; transform:rotateX(-90deg); }
 .fcd .tp span, .fcd .bt span { position:absolute; width:100%; height:200%; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:600; color:#e8e8f8; font-variant-numeric:tabular-nums; }
