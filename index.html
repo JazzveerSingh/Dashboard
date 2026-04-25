@@ -4,646 +4,376 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Jazz's Dashboard</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
 :root{
-  --bg:#f8f8f9;--bg2:#ffffff;--bg3:#f0f0f4;
+  --bg:#f8f8f9;--bg2:#fff;--bg3:#f0f0f4;
   --tx:#18181c;--tx2:#7a7a8a;--tx3:#b0b0be;
-  --bd:rgba(0,0,0,0.07);--bds:rgba(0,0,0,0.13);
-  --acc:#6c63ff;--acc2:#a09df7;--acc3:#e8e7ff;
+  --bd:rgba(0,0,0,0.07);--bds:rgba(0,0,0,0.14);
+  --acc:#6c63ff;--acc3:#e8e7ff;--acc2:#a09df7;
   --green:#4caf7d;--red:#e05c5c;--amber:#e8a838;
-  --fblue:#e8f1fb;--fgreen:#e6f5ed;--fred:#fdeaea;--famber:#fef3e2;--fpurple:#e8e7ff;
-  --r:10px;--rl:16px;--rxl:22px;--f:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-  --shadow:0 2px 12px rgba(0,0,0,0.06);--shadow2:0 4px 24px rgba(0,0,0,0.09);
+  --fgreen:#e6f5ed;--fred:#fdeaea;--famber:#fef3e2;--fpurple:#e8e7ff;
+  --r:10px;--rl:16px;--rxl:22px;
+  --f:'Inter',-apple-system,sans-serif;
+  --sh:0 2px 12px rgba(0,0,0,0.06);--sh2:0 4px 24px rgba(0,0,0,0.1);
 }
 [data-theme=dark]{
   --bg:#13131a;--bg2:#1c1c26;--bg3:#0e0e14;
   --tx:#e8e8f0;--tx2:#8888a0;--tx3:#44445a;
-  --bd:rgba(255,255,255,0.07);--bds:rgba(255,255,255,0.13);
-  --acc:#7c74ff;--acc3:#1e1c3a;
-  --fblue:#0d1e35;--fgreen:#0d2318;--fred:#2a1010;--famber:#2a1a06;--fpurple:#1a1832;
-  --shadow:0 2px 12px rgba(0,0,0,0.3);--shadow2:0 4px 24px rgba(0,0,0,0.4);
+  --bd:rgba(255,255,255,0.07);--bds:rgba(255,255,255,0.14);
+  --acc:#7c74ff;--acc3:#1e1c3a;--acc2:#a09df7;
+  --fgreen:#0d2318;--fred:#2a1010;--famber:#2a1a06;--fpurple:#1a1832;
+  --sh:0 2px 12px rgba(0,0,0,0.3);--sh2:0 4px 24px rgba(0,0,0,0.4);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--f);background:var(--bg);color:var(--tx);min-height:100vh;font-size:14px;line-height:1.5}
+body{font-family:var(--f);background:var(--bg);color:var(--tx);font-size:14px;line-height:1.5;min-height:100vh}
 
-/* ── LAYOUT ── */
+/* layout */
 .shell{display:flex;min-height:100vh}
-.sidebar{width:220px;flex-shrink:0;background:var(--bg2);border-right:0.5px solid var(--bd);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow:hidden}
-.main{flex:1;overflow:auto}
+.sidebar{width:220px;flex-shrink:0;background:var(--bg2);border-right:0.5px solid var(--bd);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.main{flex:1;min-width:0;overflow-y:auto}
 
-/* ── SIDEBAR ── */
-.sb-top{padding:24px 20px 16px}
+/* sidebar */
+.sb-top{padding:24px 20px 16px;cursor:pointer;user-select:none}
+.sb-top:hover .sb-name{color:var(--acc)}
 .sb-avatar{width:44px;height:44px;border-radius:50%;background:var(--acc3);display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:10px}
-.sb-name{font-size:15px;font-weight:600}
+.sb-name{font-size:15px;font-weight:600;transition:color .15s}
 .sb-nav{padding:8px 12px;flex:1}
 .sbn{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--r);font-size:13px;color:var(--tx2);cursor:pointer;transition:all .15s;margin-bottom:2px;user-select:none}
 .sbn:hover{background:var(--bg3);color:var(--tx)}
 .sbn.active{background:var(--acc3);color:var(--acc);font-weight:500}
 .sbn svg{width:16px;height:16px;flex-shrink:0;opacity:.7}
 .sbn.active svg{opacity:1}
-.sb-divider{height:0.5px;background:var(--bd);margin:8px 20px}
-.sb-bottom{padding:12px}
+.sb-div{height:0.5px;background:var(--bd);margin:8px 20px}
+.sb-bot{padding:12px}
 
-/* ── PROFILE ── */
-const PROFILE_EMOJIS=['🎸','🎵','🎹','🎤','🏃','💪','🧠','📚','💻','🎯','🌙','⚡','🔥','🌿','🎨','🐉','🦊','🐺','🌊','🚀','✨','🎮','🎲','🏀','⚽'];
-let profileEmoji='🎸';
-function openProfileEdit(){
-  profileEmoji=S.profile.avatar||'🎸';
-  document.getElementById('m-profile-name').value=S.profile.name||'';
-  const grid=document.getElementById('profile-emoji-grid');
-  grid.innerHTML=PROFILE_EMOJIS.map(e=>`<span class="epick${e===profileEmoji?' selected':''}" onclick="selectProfileEmoji('${e}',this)">${e}</span>`).join('');
-  openModal('profile-modal');
-}
-function selectProfileEmoji(e,el){
-  profileEmoji=e;
-  document.querySelectorAll('#profile-emoji-grid .epick').forEach(x=>x.classList.remove('selected'));
-  el.classList.add('selected');
-}
-function selectProfileEmoji(e,el){
-  profileEmoji=e;
-  document.querySelectorAll('#profile-emoji-grid .epick').forEach(x=>x.classList.remove('selected'));
-  el.classList.add('selected');
-}
-function saveProfile(){
-  const name=document.getElementById('m-profile-name').value.trim();
-  if(!name)return;
-  if(!S.profile)S.profile={};
-  S.profile.name=name;
-  S.profile.avatar=profileEmoji;
-  document.getElementById('sb-name').textContent=name;
-  document.getElementById('sb-avatar').textContent=profileEmoji;
-  save();
-  closeModal('profile-modal');
-}
-function applyProfile(){
-  if(!S.profile)return;
-  const n=document.getElementById('sb-name');
-  const a=document.getElementById('sb-avatar');
-  if(n)n.textContent=S.profile.name||'Jazz';
-  if(a)a.textContent=S.profile.avatar||'🎸';
-}
+/* flip clock */
+.fc-wrap{padding:13px 16px;margin:8px 12px;background:var(--bg3);border-radius:var(--rl)}
+.fc-row{display:flex;align-items:center;gap:5px}
+.fc-group{display:flex;gap:3px}
+.fc-card{width:28px;height:40px;position:relative;perspective:300px}
+.fc-static{position:absolute;inset:0;background:#1a1a2e;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;color:#e8e8f0;font-variant-numeric:tabular-nums}
+.fc-top{position:absolute;left:0;right:0;height:50%;overflow:hidden;background:#222240;border-radius:4px 4px 0 0;transform-origin:bottom;z-index:2}
+.fc-bot{position:absolute;top:50%;left:0;right:0;height:50%;overflow:hidden;background:#222240;border-radius:0 0 4px 4px;transform-origin:top;z-index:1;transform:rotateX(-90deg)}
+.fc-top span,.fc-bot span{position:absolute;width:100%;height:200%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;color:#e8e8f0;font-variant-numeric:tabular-nums}
+.fc-bot span{bottom:0;align-items:flex-end}
+.fc-div{position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(0,0,0,0.5);z-index:10}
+.fc-colon{font-size:20px;font-weight:700;color:var(--tx2);line-height:40px}
+.fc-date{font-size:11px;color:var(--tx2);margin-top:7px}
 
-/* ── FLIP CLOCK ── */
-.flip-clock-wrap{padding:14px 16px;margin:8px 12px;background:var(--bg3);border-radius:var(--rl)}
-.flip-clock{display:flex;align-items:center;gap:6px}
-.flip-group{display:flex;gap:3px}
-.flip-card{width:28px;height:40px;position:relative;perspective:300px;cursor:default}
-.flip-card .static{position:absolute;inset:0;background:#1a1a2e;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;color:#e8e8f0;font-variant-numeric:tabular-nums;border:0.5px solid rgba(255,255,255,0.05)}
-.flip-card .flap{position:absolute;left:0;right:0;height:50%;overflow:hidden;background:#222240;transform-origin:bottom;backface-visibility:hidden;border-radius:4px 4px 0 0}
-.flip-card .flap.bottom-flap{top:50%;transform-origin:top;border-radius:0 0 4px 4px;transform:rotateX(-90deg)}
-.flip-card .flap span{position:absolute;width:100%;height:200%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;color:#e8e8f0;font-variant-numeric:tabular-nums}
-.flip-card .flap.bottom-flap span{bottom:0;top:auto;align-items:flex-end}
-.flip-card .divider{position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(0,0,0,0.4);z-index:10}
-.flip-colon{font-size:20px;font-weight:700;color:var(--tx2);line-height:40px;margin:0 1px}
-.flip-date{font-size:11px;color:var(--tx2);margin-top:8px}
-
-/* ── HEADER ── */
-.header{padding:24px 32px 0;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px}
-.header-left h1{font-size:22px;font-weight:600}
-.header-left p{font-size:13px;color:var(--tx2);margin-top:3px}
-.header-right{display:flex;gap:8px}
-.wx-card{display:flex;align-items:center;gap:12px;background:var(--bg2);border:0.5px solid var(--bd);border-radius:var(--rl);padding:12px 18px;box-shadow:var(--shadow)}
-.wx-sep{border-left:0.5px solid var(--bd);padding-left:12px;margin-left:4px}
-.wx-label{font-size:11px;color:var(--tx2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px}
-.wx-forecast{display:flex;gap:10px}
+/* header */
+.hdr{padding:24px 28px 0;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.hdr-l h1{font-size:22px;font-weight:600}
+.hdr-l p{font-size:13px;color:var(--tx2);margin-top:3px}
+.wx-card{display:flex;align-items:center;gap:12px;background:var(--bg2);border:0.5px solid var(--bd);border-radius:var(--rl);padding:12px 16px;box-shadow:var(--sh);flex-shrink:0}
+.wx-sep{border-left:0.5px solid var(--bd);padding-left:12px;margin-left:2px}
+.wx-fc{display:flex;gap:10px}
 .wx-day{text-align:center}
 
-/* ── CONTENT ── */
-.content{padding:20px 32px 40px}
+/* content */
+.content{padding:20px 28px 40px}
 .sec{display:none}.sec.active{display:block}
 
-/* ── CARDS ── */
-.card{background:var(--bg2);border:0.5px solid var(--bd);border-radius:var(--rl);padding:20px 22px;margin-bottom:18px;box-shadow:var(--shadow)}
-.mc{background:var(--bg2);border:0.5px solid var(--bd);border-radius:var(--rl);padding:18px;box-shadow:var(--shadow)}
-.ml{font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+/* cards */
+.card{background:var(--bg2);border:0.5px solid var(--bd);border-radius:var(--rl);padding:18px 20px;margin-bottom:16px;box-shadow:var(--sh)}
+.mc{background:var(--bg2);border:0.5px solid var(--bd);border-radius:var(--rl);padding:16px;box-shadow:var(--sh)}
+.ml{font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
 .mv{font-size:26px;font-weight:600}
-.st{font-size:13px;font-weight:600;margin-bottom:16px;color:var(--tx)}
+.st{font-size:13px;font-weight:600;margin-bottom:14px;color:var(--tx)}
 
-/* ── GRIDS ── */
-.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:18px}
-.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:18px}
-.g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}
-@media(max-width:700px){.g3,.g4{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}.sidebar{width:60px}.sb-name,.sb-bottom,.sbn span,.flip-clock-wrap{display:none}.sbn{justify-content:center;padding:10px}.content{padding:16px}.header{padding:16px 16px 0}}
+/* grids */
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:16px}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
 
-/* ── ROWS ── */
-.row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--bd);font-size:13px}
+/* rows */
+.row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--bd);font-size:13px}
 .row:last-child{border-bottom:none}
 .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.dot-r{background:#e05c5c}.dot-a{background:#e8a838}.dot-g{background:#4caf7d}
-.chip{font-size:11px;padding:2px 9px;border-radius:20px;background:var(--bg3);color:var(--tx2);white-space:nowrap;font-weight:500}
-.cb{width:17px;height:17px;border:1.5px solid var(--bds);border-radius:5px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--bg);transition:all .15s}
-.cb.checked{background:var(--acc);border-color:var(--acc)}
-.cb.checked::after{content:'';display:block;width:9px;height:5px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translateY(-1px)}
+.dr{background:#e05c5c}.da{background:#e8a838}.dg{background:#4caf7d}
+.chip{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--bg3);color:var(--tx2);white-space:nowrap;font-weight:500}
+.ck{width:17px;height:17px;border:1.5px solid var(--bds);border-radius:5px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--bg2);transition:all .15s;user-select:none}
+.ck.on{background:var(--acc);border-color:var(--acc)}
+.ck.on::after{content:'';display:block;width:9px;height:5px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translateY(-1px)}
 .strike{text-decoration:line-through;color:var(--tx3)}
-.badge{font-size:11px;padding:2px 9px;border-radius:20px;font-weight:500;white-space:nowrap}
-.ph{background:var(--fred);color:#c04040}.pm{background:var(--famber);color:#b07020}.pl{background:var(--fgreen);color:#3a8060}
-.sd{background:var(--fgreen);color:#3a8060}.si{background:var(--famber);color:#b07020}.st2{background:var(--bg3);color:var(--tx2)}
 
-/* ── BUTTONS ── */
+/* badges */
+.badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500;white-space:nowrap}
+.ph{background:var(--fred);color:#b03030}.pm{background:var(--famber);color:#905010}.pl{background:var(--fgreen);color:#2d7050}
+.sd{background:var(--fgreen);color:#2d7050}.si{background:var(--famber);color:#905010}.st2{background:var(--bg3);color:var(--tx2)}
+
+/* buttons */
 button{font-family:var(--f);background:var(--bg2);border:0.5px solid var(--bds);border-radius:var(--r);padding:8px 16px;font-size:13px;color:var(--tx);cursor:pointer;transition:all .15s;font-weight:500}
 button:hover{background:var(--bg3);border-color:var(--acc);color:var(--acc)}
 button:active{transform:scale(.98)}
-.btn-primary{background:var(--acc);border-color:var(--acc);color:#fff}
-.btn-primary:hover{background:#5a52e0;border-color:#5a52e0;color:#fff}
-.xbtn{padding:3px 7px!important;font-size:11px!important;border-radius:6px!important}
+.bp{background:var(--acc);border-color:var(--acc);color:#fff}
+.bp:hover{background:#5a52e0;border-color:#5a52e0;color:#fff}
+.xb{padding:3px 7px!important;font-size:11px!important;border-radius:6px!important}
 
-/* ── INPUTS ── */
-input,select,textarea{font-family:var(--f);font-size:13px;padding:9px 12px;border:0.5px solid var(--bds);border-radius:var(--r);background:var(--bg);color:var(--tx);outline:none;transition:border .15s}
-input:focus,select:focus,textarea:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(108,99,255,0.1)}
-.ar{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+/* inputs */
+input,select,textarea{font-family:var(--f);font-size:13px;padding:8px 11px;border:0.5px solid var(--bds);border-radius:var(--r);background:var(--bg2);color:var(--tx);outline:none;transition:border .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(108,99,255,.1)}
+.ar{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 .ar input,.ar select{flex:1;min-width:90px}
 
-/* ── PROGRESS ── */
+/* progress */
 .pbg{height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}
-.pf{height:5px;border-radius:3px;transition:width .5s ease}
-.fb{background:linear-gradient(90deg,#4a90d9,#6c63ff)}.fp{background:linear-gradient(90deg,#6c63ff,#a09df7)}
-.fg{background:linear-gradient(90deg,#4caf7d,#7dd4a8)}.fa{background:linear-gradient(90deg,#e8a838,#f5c96a)}.fr{background:linear-gradient(90deg,#e05c5c,#f08080)}
+.pf{height:5px;border-radius:3px;transition:width .4s}
+.fb{background:linear-gradient(90deg,#4a90d9,#6c63ff)}
+.fp{background:linear-gradient(90deg,#6c63ff,#a09df7)}
+.fg{background:linear-gradient(90deg,#4caf7d,#7dd4a8)}
+.fa{background:linear-gradient(90deg,#e8a838,#f5c96a)}
+.fr{background:linear-gradient(90deg,#e05c5c,#f08080)}
 
-/* ── SAVINGS ── */
-.sg{padding:13px 0;border-bottom:0.5px solid var(--bd)}
+/* savings */
+.sg{padding:12px 0;border-bottom:0.5px solid var(--bd)}
 .sg:last-child{border-bottom:none}
-.sh{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:8px}
-.sn{font-weight:500}.sp{color:var(--tx2);font-size:12px}
+.sh{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:7px}
 
-/* ── MONEY ── */
-.brow{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:0.5px solid var(--bd);font-size:13px}
+/* money */
+.brow{display:flex;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--bd);font-size:13px}
 .brow:last-child{border-bottom:none}
-.bl{color:var(--tx2)}
-.inc{color:#4caf7d;font-weight:600}.exp{color:#e05c5c;font-weight:600}
-.cb2{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:13px}
+.inc{color:#3a8060;font-weight:600}.exp{color:#b03030;font-weight:600}
+.cb2{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:13px}
 .cbl{width:100px;color:var(--tx2);font-size:12px;flex-shrink:0}
 .cbt{flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
 .cbf{height:6px;border-radius:3px}
-.cba{width:48px;text-align:right;font-size:12px;font-weight:500}
-.trow{display:flex;align-items:center;padding:9px 0;border-bottom:0.5px solid var(--bd);font-size:13px;gap:10px}
+.cba{width:46px;text-align:right;font-size:12px;font-weight:500}
+.trow{display:flex;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--bd);font-size:13px;gap:10px}
 .trow:last-child{border-bottom:none}
-.tn{flex:1}
-.net-row{font-size:14px;font-weight:600;display:flex;justify-content:space-between;padding-top:14px;margin-top:4px;border-top:1px solid var(--bd)}
+.net-row{font-size:14px;font-weight:600;display:flex;justify-content:space-between;padding-top:12px;margin-top:4px;border-top:0.5px solid var(--bd)}
 
-/* ── ACADEMICS ── */
-.cc{background:var(--bg2);border:0.5px solid var(--bd);border-radius:var(--rl);padding:18px 20px;margin-bottom:14px;box-shadow:var(--shadow)}
-.ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
-.cn{font-size:14px;font-weight:600}
-.arow{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:0.5px solid var(--bd);font-size:13px}
+/* academics */
+.cc{background:var(--bg2);border:0.5px solid var(--bd);border-radius:var(--rl);padding:16px 18px;margin-bottom:12px;box-shadow:var(--sh)}
+.arow{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:0.5px solid var(--bd);font-size:13px}
 .arow:last-of-type{border-bottom:none}
-.an{flex:1}.ad{font-size:12px;color:var(--tx2)}
-textarea.notes{width:100%;min-height:60px;margin-top:12px;resize:vertical;background:var(--bg3);border-color:transparent;border-radius:var(--r);font-size:12px;color:var(--tx2)}
-textarea.notes:focus{background:var(--bg);border-color:var(--acc)}
+textarea.notes{width:100%;min-height:56px;margin-top:10px;resize:vertical;background:var(--bg3);border-color:transparent;font-size:12px;color:var(--tx2)}
+textarea.notes:focus{background:var(--bg2);border-color:var(--acc)}
 
-/* ── HABIT VISUALIZATIONS ── */
-function getDayKey(daysAgo){
-  const d=new Date();d.setDate(d.getDate()-daysAgo);return d.toISOString().slice(0,10);
-}
-function getLast(n){
-  const keys=[];for(let i=n-1;i>=0;i--)keys.push(getDayKey(i));return keys;
-}
-
-function drawLineChart(){
-  const canvas=document.getElementById('chart-line');
-  if(!canvas||!S.habits.length)return;
-  const ctx=canvas.getContext('2d');
-  const W=canvas.offsetWidth||canvas.parentElement.offsetWidth||400;
-  const H=140;
-  canvas.width=W*devicePixelRatio;canvas.height=H*devicePixelRatio;
-  canvas.style.width=W+'px';canvas.style.height=H+'px';
-  ctx.scale(devicePixelRatio,devicePixelRatio);
-  ctx.clearRect(0,0,W,H);
-
-  const days=getLast(30);
-  const rates=days.map(d=>{
-    const done=S.habits.filter(h=>h.log&&h.log[d]).length;
-    return S.habits.length?done/S.habits.length:0;
-  });
-
-  const pad={t:10,r:10,b:24,l:30};
-  const cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
-
-  // Grid lines
-  const isDark=document.documentElement.getAttribute('data-theme')==='dark';
-  const gridColor=isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.06)';
-  const txColor=isDark?'#8888a0':'#7a7a8a';
-  ctx.strokeStyle=gridColor;ctx.lineWidth=1;
-  [0,0.25,0.5,0.75,1].forEach(v=>{
-    const y=pad.t+ch*(1-v);
-    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+cw,y);ctx.stroke();
-    ctx.fillStyle=txColor;ctx.font='9px Inter,sans-serif';ctx.textAlign='right';
-    ctx.fillText(Math.round(v*100)+'%',pad.l-4,y+3);
-  });
-
-  // X labels (every 5 days)
-  ctx.fillStyle=txColor;ctx.font='9px Inter,sans-serif';ctx.textAlign='center';
-  days.forEach((d,i)=>{
-    if(i%5===0){
-      const x=pad.l+i*(cw/(days.length-1));
-      const label=new Date(d+'T12:00:00').toLocaleDateString('en-CA',{month:'short',day:'numeric'});
-      ctx.fillText(label,x,H-6);
-    }
-  });
-
-  // Fill area
-  const grad=ctx.createLinearGradient(0,pad.t,0,pad.t+ch);
-  grad.addColorStop(0,'rgba(108,99,255,0.3)');
-  grad.addColorStop(1,'rgba(108,99,255,0)');
-  ctx.beginPath();
-  rates.forEach((r,i)=>{
-    const x=pad.l+i*(cw/(rates.length-1));
-    const y=pad.t+ch*(1-r);
-    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
-  });
-  ctx.lineTo(pad.l+cw,pad.t+ch);ctx.lineTo(pad.l,pad.t+ch);ctx.closePath();
-  ctx.fillStyle=grad;ctx.fill();
-
-  // Line
-  ctx.beginPath();ctx.strokeStyle='#6c63ff';ctx.lineWidth=2;ctx.lineJoin='round';
-  rates.forEach((r,i)=>{
-    const x=pad.l+i*(cw/(rates.length-1));
-    const y=pad.t+ch*(1-r);
-    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
-  });
-  ctx.stroke();
-
-  // Dots
-  rates.forEach((r,i)=>{
-    const x=pad.l+i*(cw/(rates.length-1));
-    const y=pad.t+ch*(1-r);
-    ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);
-    ctx.fillStyle='#6c63ff';ctx.fill();
-    ctx.strokeStyle=isDark?'#1c1c26':'#fff';ctx.lineWidth=1.5;ctx.stroke();
-  });
-}
-
-function drawBarChart(){
-  const canvas=document.getElementById('chart-bar');
-  if(!canvas||!S.habits.length)return;
-  const ctx=canvas.getContext('2d');
-  const W=canvas.offsetWidth||canvas.parentElement.offsetWidth||400;
-  const H=140;
-  canvas.width=W*devicePixelRatio;canvas.height=H*devicePixelRatio;
-  canvas.style.width=W+'px';canvas.style.height=H+'px';
-  ctx.scale(devicePixelRatio,devicePixelRatio);
-  ctx.clearRect(0,0,W,H);
-
-  const isDark=document.documentElement.getAttribute('data-theme')==='dark';
-  const txColor=isDark?'#8888a0':'#7a7a8a';
-  const gridColor=isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.06)';
-  const counts=S.habits.map(h=>Object.keys(h.log||{}).length);
-  const maxC=Math.max(...counts,1);
-  const pad={t:10,r:10,b:28,l:30};
-  const cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
-  const bw=Math.min(32,(cw/S.habits.length)*0.6);
-  const gap=cw/S.habits.length;
-  const colors=['#6c63ff','#4a90d9','#4caf7d','#e8a838','#e05c5c','#a09df7','#7dd4a8'];
-
-  // Grid
-  [0,0.25,0.5,0.75,1].forEach(v=>{
-    const y=pad.t+ch*(1-v);
-    ctx.strokeStyle=gridColor;ctx.lineWidth=1;
-    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+cw,y);ctx.stroke();
-    ctx.fillStyle=txColor;ctx.font='9px Inter,sans-serif';ctx.textAlign='right';
-    ctx.fillText(Math.round(v*maxC),pad.l-4,y+3);
-  });
-
-  S.habits.forEach((h,i)=>{
-    const x=pad.l+gap*i+(gap-bw)/2;
-    const barH=(counts[i]/maxC)*ch;
-    const y=pad.t+ch-barH;
-    // Bar with rounded top
-    ctx.fillStyle=colors[i%colors.length];
-    ctx.beginPath();
-    const r=4;
-    ctx.moveTo(x+r,y);ctx.lineTo(x+bw-r,y);
-    ctx.quadraticCurveTo(x+bw,y,x+bw,y+r);
-    ctx.lineTo(x+bw,y+barH);ctx.lineTo(x,y+barH);ctx.lineTo(x,y+r);
-    ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();ctx.fill();
-    // Label
-    ctx.fillStyle=txColor;ctx.font='10px Inter,sans-serif';ctx.textAlign='center';
-    const label=h.emoji;
-    ctx.fillText(label,x+bw/2,H-8);
-    ctx.fillText(counts[i],x+bw/2,y-3);
-  });
-}
-
-function buildHeatmap(container, logDays, title){
-  // 90 days heatmap
-  const totalDays=90;
-  const now=new Date();
-  // Find the Sunday on or before totalDays ago
-  const startDate=new Date(now);
-  startDate.setDate(startDate.getDate()-(totalDays-1));
-  // Align to week start (Sunday)
-  const dow=startDate.getDay();
-  startDate.setDate(startDate.getDate()-dow);
-
-  // Build weeks
-  const weeks=[];
-  let d=new Date(startDate);
-  while(d<=now){
-    const week=[];
-    for(let i=0;i<7;i++){
-      week.push(new Date(d));
-      d.setDate(d.getDate()+1);
-    }
-    weeks.push(week);
-  }
-
-  const maxVal=typeof logDays[Object.keys(logDays)[0]]==='number'
-    ? Math.max(...Object.values(logDays),1)
-    : 1;
-
-  // Month labels
-  const monthLabels=weeks.map(w=>{
-    const first=w[0];
-    return first.getDate()<=7?first.toLocaleDateString('en-CA',{month:'short'}):'';
-  });
-
-  let html=`<div class="heatmap-wrap"><div style="display:flex;gap:0">`;
-  // Day labels
-  html+=`<div class="heatmap-days" style="margin-top:18px">`;
-  ['S','M','T','W','T','F','S'].forEach(l=>html+=`<div class="heatmap-day-label">${l}</div>`);
-  html+=`</div>`;
-
-  // Grid + month labels
-  html+=`<div><div class="heatmap-months">`;
-  monthLabels.forEach(l=>html+=`<div style="width:15px;text-align:center">${l}</div>`);
-  html+=`</div><div class="heatmap-grid">`;
-  weeks.forEach(week=>{
-    html+=`<div class="heatmap-col">`;
-    week.forEach(day=>{
-      const key=day.toISOString().slice(0,10);
-      const isFuture=day>now;
-      let lvl=0;
-      if(!isFuture&&logDays[key]){
-        const v=typeof logDays[key]==='number'?logDays[key]/maxVal:1;
-        lvl=v>=0.75?4:v>=0.5?3:v>=0.25?2:1;
-      }
-      const title2=day.toLocaleDateString('en-CA',{month:'short',day:'numeric',year:'numeric'});
-      html+=`<div class="heatmap-cell${lvl?' l'+lvl:''}" title="${title2}"></div>`;
-    });
-    html+=`</div>`;
-  });
-  html+=`</div></div></div></div>`;
-  container.innerHTML=html;
-}
-
-function renderHabitViz(){
-  const viz=document.getElementById('habit-viz');
-  if(!S.habits.length){if(viz)viz.style.display='none';return;}
-  if(viz)viz.style.display='block';
-
-  // Small delay to ensure canvas is laid out
-  setTimeout(()=>{
-    drawLineChart();
-    drawBarChart();
-  },50);
-
-  // Overall heatmap — value = number of habits done that day
-  const allLog={};
-  getLast(90).forEach(d=>{
-    const cnt=S.habits.filter(h=>h.log&&h.log[d]).length;
-    if(cnt>0)allLog[d]=cnt;
-  });
-  const allContainer=document.getElementById('heatmap-all');
-  if(allContainer)buildHeatmap(allContainer,allLog,'Overall');
-
-  // Per-habit heatmaps
-
-}
-
-/* ── POMODORO ── */
-.pomo-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;padding:12px 0}
-.ptime{font-size:52px;font-weight:300;letter-spacing:4px;color:var(--tx);font-variant-numeric:tabular-nums}
-.plabel{font-size:12px;color:var(--tx2);text-transform:uppercase;letter-spacing:1px}
+/* pomodoro */
+.pomo-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;padding:10px 0}
+.ptime{font-size:52px;font-weight:300;letter-spacing:4px;font-variant-numeric:tabular-nums}
+.plbl{font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:1px}
 .pbtns{display:flex;gap:8px}
-.pbar-wrap{width:100%;max-width:280px}
+.pbar{width:100%;max-width:280px}
 
-/* ── HABIT TRACKER ── */
-.habit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:18px}
-.habit-card{background:var(--bg2);border:0.5px solid var(--bd);border-radius:var(--rl);padding:18px;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;transition:all .2s;position:relative}
-.habit-card:hover{border-color:var(--acc2);transform:translateY(-1px);box-shadow:var(--shadow2)}
-.habit-card.done{background:var(--acc3);border-color:var(--acc2)}
-.habit-emoji{font-size:28px;line-height:1}
-.habit-name{font-size:13px;font-weight:500;text-align:center;color:var(--tx)}
-.habit-streak{font-size:11px;color:var(--tx2);display:flex;align-items:center;gap:4px}
-.habit-streak.hot{color:#e05c5c}
-.habit-check{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--bds);display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .2s}
-.habit-card.done .habit-check{background:var(--acc);border-color:var(--acc);color:#fff}
-.habit-del{position:absolute;top:8px;right:8px;opacity:0;transition:opacity .15s;padding:2px 6px!important;font-size:10px!important;border-radius:5px!important}
-.habit-card:hover .habit-del{opacity:1}
-.week-dots{display:flex;gap:3px}
-.wdot{width:6px;height:6px;border-radius:50%;background:var(--bg3)}
-.wdot.filled{background:var(--acc)}
+/* habits */
+.hgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.hcard{background:var(--bg2);border:0.5px solid var(--bd);border-radius:var(--rl);padding:16px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:all .2s;position:relative;box-shadow:var(--sh);user-select:none}
+.hcard:hover{border-color:var(--acc2);transform:translateY(-1px);box-shadow:var(--sh2)}
+.hcard.done{background:var(--acc3);border-color:var(--acc2)}
+.hemoji{font-size:26px;line-height:1}
+.hname{font-size:13px;font-weight:500;text-align:center}
+.hstreak{font-size:11px;color:var(--tx2)}
+.hstreak.hot{color:#e05c5c}
+.hcheck{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--bds);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;transition:all .2s}
+.hcard.done .hcheck{background:var(--acc);border-color:var(--acc);color:#fff}
+.hdel{position:absolute;top:7px;right:7px;opacity:0;transition:opacity .15s;padding:2px 6px!important;font-size:10px!important;border-radius:5px!important}
+.hcard:hover .hdel{opacity:1}
+.wdots{display:flex;gap:3px}
+.wd{width:6px;height:6px;border-radius:50%;background:var(--bg3)}
+.wd.on{background:var(--acc)}
 
-/* ── HEATMAP ── */
-.heatmap-wrap{overflow-x:auto;padding-bottom:4px}
-.heatmap-grid{display:flex;gap:3px;align-items:flex-start}
-.heatmap-col{display:flex;flex-direction:column;gap:3px}
-.heatmap-cell{width:12px;height:12px;border-radius:2px;background:var(--bg3);transition:background .2s;cursor:default;flex-shrink:0}
-.heatmap-cell:hover{outline:1.5px solid var(--acc)}
-.heatmap-cell.l1{background:rgba(108,99,255,0.2)}
-.heatmap-cell.l2{background:rgba(108,99,255,0.45)}
-.heatmap-cell.l3{background:rgba(108,99,255,0.7)}
-.heatmap-cell.l4{background:rgba(108,99,255,1)}
-.heatmap-months{display:flex;gap:3px;margin-bottom:4px;font-size:10px;color:var(--tx2)}
-.heatmap-days{display:flex;flex-direction:column;gap:3px;margin-right:4px;font-size:10px;color:var(--tx2);padding-top:0}
-.heatmap-day-label{height:12px;line-height:12px}
-.per-habit-hm{margin-bottom:8px}
-.per-habit-hm-title{font-size:13px;font-weight:500;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+/* heatmap */
+.hm-wrap{overflow-x:auto;padding-bottom:4px}
+.hm-outer{display:flex;gap:0}
+.hm-labels{display:flex;flex-direction:column;gap:3px;margin-right:4px;padding-top:18px;font-size:10px;color:var(--tx2)}
+.hm-lbl{height:12px;line-height:12px}
+.hm-grid{display:flex;flex-direction:column;gap:0}
+.hm-months{display:flex;gap:3px;margin-bottom:4px;font-size:10px;color:var(--tx2)}
+.hm-cols{display:flex;gap:3px}
+.hm-col{display:flex;flex-direction:column;gap:3px}
+.hm-cell{width:12px;height:12px;border-radius:2px;background:var(--bg3);flex-shrink:0}
+.hm-cell.l1{background:rgba(108,99,255,.18)}
+.hm-cell.l2{background:rgba(108,99,255,.4)}
+.hm-cell.l3{background:rgba(108,99,255,.65)}
+.hm-cell.l4{background:rgba(108,99,255,.9)}
+.hm-legend{display:flex;align-items:center;gap:5px;margin-top:8px;font-size:11px;color:var(--tx2)}
+.hm-lc{width:10px;height:10px;border-radius:2px}
 
-/* ── CANVAS CHART ── */
-.chart-tooltip{position:absolute;background:var(--bg);border:0.5px solid var(--bd);border-radius:var(--r);padding:6px 10px;font-size:12px;color:var(--tx);pointer-events:none;display:none;box-shadow:var(--shadow);white-space:nowrap;z-index:10}
+/* tag strip */
+.tstrip{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tpill{font-size:11px;padding:4px 12px;border-radius:20px;cursor:pointer;border:0.5px solid var(--bd);background:var(--bg2);color:var(--tx2);font-weight:500;transition:all .15s;user-select:none}
+.tpill.on{background:var(--acc);color:#fff;border-color:var(--acc)}
 
-/* ── MODAL ── */
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center}
-.modal-bg.open{display:flex}
-.modal{background:var(--bg2);border-radius:var(--rxl);padding:28px;width:min(440px,92vw);border:0.5px solid var(--bd);box-shadow:var(--shadow2)}
-.modal h3{font-size:16px;font-weight:600;margin-bottom:20px}
-.mrow{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+/* modal */
+.mbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center}
+.mbg.open{display:flex}
+.modal{background:var(--bg2);border-radius:var(--rxl);padding:26px;width:min(420px,92vw);border:0.5px solid var(--bd);box-shadow:var(--sh2)}
+.modal h3{font-size:15px;font-weight:600;margin-bottom:18px}
+.mrow{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
 .mrow label{font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;font-weight:500}
 .mrow input,.mrow select,.mrow textarea{width:100%}
-.mbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.mbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.egrid{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.ep{font-size:20px;cursor:pointer;padding:4px;border-radius:6px;border:1.5px solid transparent;line-height:1;transition:all .1s}
+.ep:hover{background:var(--bg3)}
+.ep.on{border-color:var(--acc);background:var(--acc3)}
 
-/* ── EMOJI PICKER ── */
-.emoji-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.epick{font-size:20px;cursor:pointer;padding:4px;border-radius:6px;border:1.5px solid transparent;transition:all .1s;line-height:1}
-.epick:hover{background:var(--bg3)}
-.epick.selected{border-color:var(--acc);background:var(--acc3)}
-
-/* ── TAG STRIP ── */
-.tag-strip{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
-.tag-pill{font-size:11px;padding:4px 12px;border-radius:20px;cursor:pointer;border:0.5px solid var(--bd);background:var(--bg2);color:var(--tx2);font-weight:500;transition:all .15s}
-.tag-pill.active{background:var(--acc);color:#fff;border-color:var(--acc)}
-
-.div{height:0.5px;background:var(--bd);margin:14px 0}
+.div{height:0.5px;background:var(--bd);margin:12px 0}
 </style>
 </head>
 <body>
 
 <!-- MODALS -->
-<div class="modal-bg" id="task-modal">
+<div class="mbg" id="m-profile">
   <div class="modal">
-    <h3 id="task-modal-title">Add task</h3>
-    <div class="mrow"><label>Task name</label><input id="m-task-name" type="text" placeholder="What needs doing?"/></div>
-    <div class="mrow"><label>Priority</label><select id="m-task-pri"><option>High</option><option selected>Med</option><option>Low</option></select></div>
-    <div class="mrow"><label>Tag</label><select id="m-task-tag"><option>personal</option><option>academics</option><option>errands</option><option>uni prep</option><option>music</option></select></div>
-    <div class="mrow"><label>Due date</label><input id="m-task-date" type="date"/></div>
-    <div class="mbtns"><button onclick="closeModal('task-modal')">Cancel</button><button class="btn-primary" id="m-task-save" onclick="saveTask()">Add task</button></div>
+    <h3>Edit profile</h3>
+    <div class="mrow"><label>Name</label><input id="p-name" type="text"/></div>
+    <div class="mrow"><label>Avatar</label><div class="egrid" id="p-emojis"></div></div>
+    <div class="mbtns">
+      <button onclick="closeM('m-profile')">Cancel</button>
+      <button class="bp" onclick="saveProfile()">Save</button>
+    </div>
   </div>
 </div>
-<div class="modal-bg" id="course-modal">
+
+<div class="mbg" id="m-task">
+  <div class="modal">
+    <h3>Add task</h3>
+    <div class="mrow"><label>Name</label><input id="t-name" type="text" placeholder="What needs doing?"/></div>
+    <div class="mrow"><label>Priority</label><select id="t-pri"><option>High</option><option selected>Med</option><option>Low</option></select></div>
+    <div class="mrow"><label>Tag</label><select id="t-tag"><option>personal</option><option>academics</option><option>errands</option><option>uni prep</option><option>music</option></select></div>
+    <div class="mrow"><label>Due date</label><input id="t-date" type="date"/></div>
+    <div class="mbtns"><button onclick="closeM('m-task')">Cancel</button><button class="bp" onclick="saveTask()">Add</button></div>
+  </div>
+</div>
+
+<div class="mbg" id="m-course">
   <div class="modal">
     <h3>Add course</h3>
-    <div class="mrow"><label>Course name</label><input id="m-course-name" type="text" placeholder="e.g. Biology (SBI4U)"/></div>
-    <div class="mrow"><label>Current grade (%)</label><input id="m-course-grade" type="number" min="0" max="100" placeholder="e.g. 88"/></div>
-    <div class="mbtns"><button onclick="closeModal('course-modal')">Cancel</button><button class="btn-primary" onclick="saveCourse()">Add course</button></div>
+    <div class="mrow"><label>Name</label><input id="c-name" type="text" placeholder="e.g. Calculus (MCV4U)"/></div>
+    <div class="mrow"><label>Grade (%)</label><input id="c-grade" type="number" min="0" max="100" placeholder="e.g. 92"/></div>
+    <div class="mbtns"><button onclick="closeM('m-course')">Cancel</button><button class="bp" onclick="saveCourse()">Add</button></div>
   </div>
 </div>
-<div class="modal-bg" id="assign-modal">
+
+<div class="mbg" id="m-assign">
   <div class="modal">
     <h3>Add assignment</h3>
-    <div class="mrow"><label>Assignment name</label><input id="m-assign-name" type="text" placeholder="e.g. Unit test"/></div>
-    <div class="mrow"><label>Due date</label><input id="m-assign-date" type="date"/></div>
-    <div class="mrow"><label>Status</label><select id="m-assign-status"><option value="todo">To do</option><option value="ip">In progress</option><option value="done">Done</option></select></div>
-    <input type="hidden" id="m-assign-course"/>
-    <div class="mbtns"><button onclick="closeModal('assign-modal')">Cancel</button><button class="btn-primary" onclick="saveAssign()">Add</button></div>
+    <div class="mrow"><label>Name</label><input id="a-name" type="text" placeholder="e.g. Unit test"/></div>
+    <div class="mrow"><label>Due date</label><input id="a-date" type="date"/></div>
+    <div class="mrow"><label>Status</label><select id="a-status"><option value="todo">To do</option><option value="ip">In progress</option><option value="done">Done</option></select></div>
+    <input type="hidden" id="a-cid"/>
+    <div class="mbtns"><button onclick="closeM('m-assign')">Cancel</button><button class="bp" onclick="saveAssign()">Add</button></div>
   </div>
 </div>
-<div class="modal-bg" id="saving-modal">
+
+<div class="mbg" id="m-saving">
   <div class="modal">
     <h3>Add savings goal</h3>
-    <div class="mrow"><label>Goal name</label><input id="m-sav-name" type="text" placeholder="e.g. New guitar"/></div>
-    <div class="mrow"><label>Current amount ($)</label><input id="m-sav-cur" type="number" min="0" placeholder="0"/></div>
-    <div class="mrow"><label>Target amount ($)</label><input id="m-sav-tgt" type="number" min="1" placeholder="e.g. 500"/></div>
-    <div class="mbtns"><button onclick="closeModal('saving-modal')">Cancel</button><button class="btn-primary" onclick="saveSaving()">Add goal</button></div>
+    <div class="mrow"><label>Name</label><input id="s-name" type="text" placeholder="e.g. Laptop fund"/></div>
+    <div class="mrow"><label>Current ($)</label><input id="s-cur" type="number" min="0" placeholder="0"/></div>
+    <div class="mrow"><label>Target ($)</label><input id="s-tgt" type="number" min="1" placeholder="500"/></div>
+    <div class="mbtns"><button onclick="closeM('m-saving')">Cancel</button><button class="bp" onclick="saveSaving()">Add</button></div>
   </div>
 </div>
-<div class="modal-bg" id="habit-modal">
+
+<div class="mbg" id="m-habit">
   <div class="modal">
     <h3>Add habit</h3>
-    <div class="mrow"><label>Habit name</label><input id="m-habit-name" type="text" placeholder="e.g. Practice guitar"/></div>
-    <div class="mrow">
-      <label>Pick an emoji</label>
-      <div class="emoji-grid" id="emoji-grid"></div>
-    </div>
-    <div class="mbtns"><button onclick="closeModal('habit-modal')">Cancel</button><button class="btn-primary" onclick="saveHabit()">Add habit</button></div>
+    <div class="mrow"><label>Name</label><input id="h-name" type="text" placeholder="e.g. Practice guitar"/></div>
+    <div class="mrow"><label>Emoji</label><div class="egrid" id="h-emojis"></div></div>
+    <div class="mbtns"><button onclick="closeM('m-habit')">Cancel</button><button class="bp" onclick="saveHabit()">Add</button></div>
   </div>
 </div>
 
 <div class="shell">
-  <!-- SIDEBAR -->
   <div class="sidebar">
-    <div class="sb-top" style="cursor:pointer" onclick="openProfileEdit()" title="Click to edit profile">
-      <div class="sb-avatar" id="sb-avatar">🎸</div>
-      <div class="sb-name" id="sb-name">Jazz</div>
+    <div class="sb-top" onclick="openProfile()">
+      <div class="sb-avatar" id="sb-av">🎸</div>
+      <div class="sb-name" id="sb-nm">Jazz</div>
     </div>
-    <!-- FLIP CLOCK -->
-    <div class="flip-clock-wrap">
-              <div class="flip-clock" id="flip-clock">
-        <div class="flip-group">
-          <div class="flip-card" id="fc-h0"><div class="static">0</div><div class="flap top-flap"><span>0</span></div><div class="flap bottom-flap"><span>0</span></div><div class="divider"></div></div>
-          <div class="flip-card" id="fc-h1"><div class="static">0</div><div class="flap top-flap"><span>0</span></div><div class="flap bottom-flap"><span>0</span></div><div class="divider"></div></div>
+    <div class="fc-wrap">
+      <div class="fc-row">
+        <div class="fc-group">
+          <div class="fc-card" id="fc-h0"><div class="fc-static">0</div><div class="fc-top"><span>0</span></div><div class="fc-bot"><span>0</span></div><div class="fc-div"></div></div>
+          <div class="fc-card" id="fc-h1"><div class="fc-static">0</div><div class="fc-top"><span>0</span></div><div class="fc-bot"><span>0</span></div><div class="fc-div"></div></div>
         </div>
-        <div class="flip-colon">:</div>
-        <div class="flip-group">
-          <div class="flip-card" id="fc-m0"><div class="static">0</div><div class="flap top-flap"><span>0</span></div><div class="flap bottom-flap"><span>0</span></div><div class="divider"></div></div>
-          <div class="flip-card" id="fc-m1"><div class="static">0</div><div class="flap top-flap"><span>0</span></div><div class="flap bottom-flap"><span>0</span></div><div class="divider"></div></div>
+        <div class="fc-colon">:</div>
+        <div class="fc-group">
+          <div class="fc-card" id="fc-m0"><div class="fc-static">0</div><div class="fc-top"><span>0</span></div><div class="fc-bot"><span>0</span></div><div class="fc-div"></div></div>
+          <div class="fc-card" id="fc-m1"><div class="fc-static">0</div><div class="fc-top"><span>0</span></div><div class="fc-bot"><span>0</span></div><div class="fc-div"></div></div>
         </div>
       </div>
-      <div class="flip-date" id="flip-date"></div>
+      <div class="fc-date" id="fc-date"></div>
     </div>
     <div class="sb-nav">
-      <div class="sbn active" onclick="switchTab('home')">
-        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1L1 7v8h5v-5h4v5h5V7z"/></svg><span>Home</span>
-      </div>
-      <div class="sbn" onclick="switchTab('tasks')">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8l2 2 4-4"/></svg><span>Tasks</span>
-      </div>
-      <div class="sbn" onclick="switchTab('academics')">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2L2 5l6 3 6-3-6-3z"/><path d="M2 5v4"/><path d="M5 6.5v3.5a6 3 0 006 0V6.5"/></svg><span>Academics</span>
-      </div>
-      <div class="sbn" onclick="switchTab('money')">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="4" width="14" height="10" rx="2"/><path d="M1 7h14"/><circle cx="8" cy="11" r="1.5"/></svg><span>Money</span>
-      </div>
-      <div class="sbn" onclick="switchTab('habits')">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2a6 6 0 100 12A6 6 0 008 2z"/><path d="M8 5v3l2 2"/></svg><span>Habits</span>
-      </div>
+      <div class="sbn active" onclick="goTab('home')"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1L1 7v8h5v-5h4v5h5V7z"/></svg><span>Home</span></div>
+      <div class="sbn" onclick="goTab('tasks')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8l2 2 4-4"/></svg><span>Tasks</span></div>
+      <div class="sbn" onclick="goTab('academics')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2L2 5l6 3 6-3-6-3z"/><path d="M2 5v4"/><path d="M5 6.5v3.5a6 3 0 006 0V6.5"/></svg><span>Academics</span></div>
+      <div class="sbn" onclick="goTab('money')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="4" width="14" height="10" rx="2"/><path d="M1 7h14"/><circle cx="8" cy="11" r="1.5"/></svg><span>Money</span></div>
+      <div class="sbn" onclick="goTab('habits')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg><span>Habits</span></div>
     </div>
-    <div class="sb-divider"></div>
-    <div class="sb-bottom">
-      <button onclick="toggleTheme()" id="theme-btn" style="width:100%;justify-content:center;font-size:12px;padding:8px">🌙 Dark mode</button>
+    <div class="sb-div"></div>
+    <div class="sb-bot">
+      <button onclick="toggleTheme()" id="theme-btn" style="width:100%;font-size:12px;padding:8px">🌙 Dark mode</button>
     </div>
   </div>
 
-  <!-- MAIN -->
   <div class="main">
 
     <!-- HOME -->
     <div class="sec active" id="sec-home">
-      <div class="header">
-        <div class="header-left">
+      <div class="hdr">
+        <div class="hdr-l">
           <h1 id="greeting">Good morning ✦</h1>
           <p>Here's what's on today.</p>
         </div>
         <div class="wx-card">
-          <div style="font-size:28px;line-height:1" id="wx-icon">⏳</div>
+          <div style="font-size:26px;line-height:1" id="wx-icon">⏳</div>
           <div>
-            <div style="font-size:20px;font-weight:600;line-height:1" id="wx-temp">--°C</div>
+            <div style="font-size:19px;font-weight:600;line-height:1" id="wx-temp">--°C</div>
             <div style="font-size:11px;color:var(--tx2);margin-top:3px" id="wx-cond">Loading...</div>
           </div>
           <div class="wx-sep">
-            <div class="wx-label">Next 3 days</div>
-            <div class="wx-forecast" id="wx-forecast">
-              <div class="wx-day" style="opacity:.4"><div style="font-size:14px">—</div><div style="font-size:11px;font-weight:500;margin-top:2px">--°</div><div style="font-size:10px;color:var(--tx2)">---</div></div>
-            </div>
+            <div style="font-size:11px;color:var(--tx2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px">Next 3 days</div>
+            <div class="wx-fc" id="wx-fc"></div>
           </div>
         </div>
       </div>
       <div class="content">
         <div class="g4">
-          <div class="mc"><div class="ml">Due this week</div><div class="mv" id="hm-tasks">—</div></div>
-          <div class="mc"><div class="ml">Monthly income</div><div class="mv inc" id="hm-income">—</div></div>
-          <div class="mc"><div class="ml">Budget remaining</div><div class="mv" id="hm-remain">—</div></div>
+          <div class="mc"><div class="ml">Due this week</div><div class="mv" id="hm-due">—</div></div>
+          <div class="mc"><div class="ml">Monthly income</div><div class="mv inc" id="hm-inc">—</div></div>
+          <div class="mc"><div class="ml">Budget left</div><div class="mv" id="hm-rem">—</div></div>
           <div class="mc"><div class="ml">Current average</div><div class="mv" id="hm-avg">—</div></div>
         </div>
         <div class="g2">
           <div class="card">
             <div class="st">Upcoming deadlines</div>
-            <div id="hm-deadlines"><span style="font-size:13px;color:var(--tx2)">No upcoming deadlines.</span></div>
+            <div id="hm-dl"></div>
           </div>
           <div class="card">
-            <div class="st">Today's to-dos</div>
-            <div id="hm-todos"><span style="font-size:13px;color:var(--tx2)">No tasks for today.</span></div>
+            <div class="st">Today's tasks</div>
+            <div id="hm-tasks"></div>
             <div class="div"></div>
             <div class="st">Habits today</div>
-            <div id="hm-habits"><span style="font-size:13px;color:var(--tx2)">No habits yet.</span></div>
+            <div id="hm-habits"></div>
           </div>
         </div>
-        <div class="card" id="hm-home-card" style="display:none">
+        <div class="card" id="hm-viz" style="display:none">
           <div class="g2" style="margin-bottom:0">
             <div>
-              <div class="st">Habit completion — last 30 days</div>
-              <div style="position:relative;height:130px">
-                <canvas id="chart-line-home"></canvas>
-              </div>
+              <div class="st">Habit completion — 30 days</div>
+              <div style="position:relative;height:120px"><canvas id="hm-line"></canvas></div>
             </div>
             <div>
               <div class="st">Overall heatmap</div>
-              <div id="heatmap-home"></div>
+              <div id="hm-heatmap"></div>
             </div>
           </div>
         </div>
         <div class="card">
           <div class="st">Pomodoro timer</div>
           <div class="pomo-wrap">
-            <div class="plabel" id="plabel">Focus session</div>
-            <div class="ptime" id="ptime">25:00</div>
-            <div class="pbar-wrap"><div class="pbg"><div class="pf fb" id="pbar" style="width:100%"></div></div></div>
+            <div class="plbl" id="p-lbl">Focus session</div>
+            <div class="ptime" id="p-time">25:00</div>
+            <div class="pbar"><div class="pbg"><div class="pf fb" id="p-bar" style="width:100%"></div></div></div>
             <div class="pbtns">
-              <button id="pstart" onclick="pomoSS()">▶ Start</button>
+              <button id="p-start" onclick="pomoSS()">▶ Start</button>
               <button onclick="pomoReset()">↺ Reset</button>
-              <button id="pmode" onclick="pomoMode()">Switch to break</button>
+              <button id="p-mode" onclick="pomoMode()">Break mode</button>
             </div>
           </div>
         </div>
@@ -652,18 +382,18 @@ function renderHabitViz(){
 
     <!-- TASKS -->
     <div class="sec" id="sec-tasks">
-      <div class="header">
-        <div class="header-left"><h1>Tasks</h1><p id="task-count-label">Loading...</p></div>
-        <div class="header-right"><button class="btn-primary" onclick="openTaskModal()">+ Add task</button></div>
+      <div class="hdr">
+        <div class="hdr-l"><h1>Tasks</h1><p id="task-lbl">—</p></div>
+        <div><button class="bp" onclick="openM('m-task')">+ Add task</button></div>
       </div>
       <div class="content">
-        <div class="tag-strip">
-          <div class="tag-pill active" onclick="setTagFilter('',this)">All</div>
-          <div class="tag-pill" onclick="setTagFilter('personal',this)">Personal</div>
-          <div class="tag-pill" onclick="setTagFilter('academics',this)">Academics</div>
-          <div class="tag-pill" onclick="setTagFilter('errands',this)">Errands</div>
-          <div class="tag-pill" onclick="setTagFilter('uni prep',this)">Uni prep</div>
-          <div class="tag-pill" onclick="setTagFilter('music',this)">Music</div>
+        <div class="tstrip">
+          <div class="tpill on" onclick="setTF('',this)">All</div>
+          <div class="tpill" onclick="setTF('personal',this)">Personal</div>
+          <div class="tpill" onclick="setTF('academics',this)">Academics</div>
+          <div class="tpill" onclick="setTF('errands',this)">Errands</div>
+          <div class="tpill" onclick="setTF('uni prep',this)">Uni prep</div>
+          <div class="tpill" onclick="setTF('music',this)">Music</div>
         </div>
         <div class="card"><div id="task-list"></div></div>
       </div>
@@ -671,22 +401,14 @@ function renderHabitViz(){
 
     <!-- ACADEMICS -->
     <div class="sec" id="sec-academics">
-      <div class="header">
-        <div class="header-left"><h1>Academics</h1><p>Track your courses and grades.</p></div>
-        <div class="header-right"><button class="btn-primary" onclick="openModal('course-modal')">+ Add course</button></div>
+      <div class="hdr">
+        <div class="hdr-l"><h1>Academics</h1><p>Courses and assignments.</p></div>
+        <div><button class="bp" onclick="openM('m-course')">+ Add course</button></div>
       </div>
       <div class="content">
-        <div class="g2" style="margin-bottom:18px">
-          <div class="mc">
-            <div class="ml">Weighted average</div>
-            <div class="mv" id="ac-avg">—</div>
-            <div style="margin-top:8px"><div class="pbg"><div class="pf fp" id="avg-bar" style="width:0%"></div></div></div>
-          </div>
-          <div class="mc">
-            <div class="ml">Assignments complete</div>
-            <div class="mv" id="ac-done">—</div>
-            <div style="font-size:12px;color:var(--tx2);margin-top:4px" id="ac-done-sub"></div>
-          </div>
+        <div class="g2" style="margin-bottom:16px">
+          <div class="mc"><div class="ml">Average</div><div class="mv" id="ac-avg">—</div><div style="margin-top:7px"><div class="pbg"><div class="pf fp" id="ac-bar" style="width:0%"></div></div></div></div>
+          <div class="mc"><div class="ml">Assignments done</div><div class="mv" id="ac-done">—</div><div style="font-size:12px;color:var(--tx2);margin-top:3px" id="ac-sub"></div></div>
         </div>
         <div id="course-list"></div>
       </div>
@@ -694,41 +416,32 @@ function renderHabitViz(){
 
     <!-- MONEY -->
     <div class="sec" id="sec-money">
-      <div class="header">
-        <div class="header-left"><h1>Money</h1><p>Track your budget and savings.</p></div>
-        <div class="header-right"><button class="btn-primary" onclick="openModal('saving-modal')">+ Add goal</button></div>
+      <div class="hdr">
+        <div class="hdr-l"><h1>Money</h1><p>Budget and savings.</p></div>
+        <div><button class="bp" onclick="openM('m-saving')">+ Add goal</button></div>
       </div>
       <div class="content">
         <div class="g3">
-          <div class="mc"><div class="ml">Monthly income</div><div class="mv inc" id="mn-income">$0</div></div>
-          <div class="mc"><div class="ml">Spent so far</div><div class="mv exp" id="mn-spent">$0</div></div>
-          <div class="mc"><div class="ml">Remaining</div><div class="mv" id="mn-remain">$0</div></div>
+          <div class="mc"><div class="ml">Income</div><div class="mv inc" id="mn-inc">$0</div></div>
+          <div class="mc"><div class="ml">Spent</div><div class="mv exp" id="mn-sp">$0</div></div>
+          <div class="mc"><div class="ml">Remaining</div><div class="mv" id="mn-rem">$0</div></div>
         </div>
         <div class="g2">
-          <div class="card">
-            <div class="st">Budget overview</div>
-            <div id="budget-rows"></div>
-            <div class="net-row"><span>Net this month</span><span id="mn-net">$0</span></div>
-          </div>
-          <div class="card">
-            <div class="st">Spending by category</div>
-            <div id="cat-bars"></div>
-          </div>
+          <div class="card"><div class="st">Budget</div><div id="budget-rows"></div><div class="net-row"><span>Net</span><span id="mn-net">$0</span></div></div>
+          <div class="card"><div class="st">By category</div><div id="cat-bars"></div></div>
         </div>
         <div class="card">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-            <div class="st" style="margin:0">Savings goals</div>
-          </div>
+          <div class="st">Savings goals</div>
           <div id="savings-list"></div>
         </div>
         <div class="card">
           <div class="st">Transactions</div>
           <div id="txn-list"></div>
           <div class="ar">
-            <input type="text" id="txn-name" placeholder="Description..."/>
+            <input type="text" id="txn-nm" placeholder="Description..."/>
             <select id="txn-cat"><option>food</option><option>transport</option><option>gear & tech</option><option>subscriptions</option><option>income</option><option>other</option></select>
-            <input type="number" id="txn-amt" placeholder="Amount ($)" style="flex:0.5;min-width:80px"/>
-            <button class="btn-primary" onclick="addTxn()" style="flex-shrink:0">Add</button>
+            <input type="number" id="txn-amt" placeholder="$" style="flex:0.4;min-width:70px"/>
+            <button class="bp" onclick="addTxn()" style="flex-shrink:0">Add</button>
           </div>
         </div>
       </div>
@@ -736,36 +449,38 @@ function renderHabitViz(){
 
     <!-- HABITS -->
     <div class="sec" id="sec-habits">
-      <div class="header">
-        <div class="header-left"><h1>Habits</h1><p id="habit-summary">Track your daily habits.</p></div>
-        <div class="header-right"><button class="btn-primary" onclick="openHabitModal()">+ Add habit</button></div>
+      <div class="hdr">
+        <div class="hdr-l"><h1>Habits</h1><p id="h-lbl">Track your daily habits.</p></div>
+        <div><button class="bp" onclick="openHabitModal()">+ Add habit</button></div>
       </div>
       <div class="content">
-        <div class="habit-grid" id="habit-grid"></div>
-        <div class="card" id="habit-empty" style="display:none;text-align:center;padding:40px;color:var(--tx2)">
-          <div style="font-size:32px;margin-bottom:12px">🌱</div>
-          <div style="font-size:14px;font-weight:500;margin-bottom:6px">No habits yet</div>
-          <div style="font-size:13px">Add a habit to start building your streaks.</div>
+        <div class="hgrid" id="habit-grid"></div>
+        <div id="habit-empty" class="card" style="display:none;text-align:center;padding:36px;color:var(--tx2)">
+          <div style="font-size:30px;margin-bottom:10px">🌱</div>
+          <div style="font-weight:500;margin-bottom:5px">No habits yet</div>
+          <div style="font-size:13px">Add a habit to start building streaks.</div>
         </div>
-        <!-- VISUALIZATIONS -->
         <div id="habit-viz" style="display:none">
           <div class="g2">
             <div class="card">
-              <div class="st">Daily completion rate — last 30 days</div>
-              <div style="position:relative;height:140px">
-                <canvas id="chart-line" style="width:100%;height:100%"></canvas>
-              </div>
+              <div class="st">Completion rate — last 30 days</div>
+              <div style="position:relative;height:130px"><canvas id="viz-line"></canvas></div>
             </div>
             <div class="card">
               <div class="st">Total completions per habit</div>
-              <div style="position:relative;height:140px">
-                <canvas id="chart-bar" style="width:100%;height:100%"></canvas>
-              </div>
+              <div style="position:relative;height:130px"><canvas id="viz-bar"></canvas></div>
             </div>
           </div>
           <div class="card">
             <div class="st">Overall heatmap — last 3 months</div>
-            <div id="heatmap-all"></div>
+            <div id="viz-heatmap"></div>
+            <div class="hm-legend">Less <div style="display:flex;gap:2px;margin:0 4px">
+              <div class="hm-lc" style="background:var(--bg3)"></div>
+              <div class="hm-lc" style="background:rgba(108,99,255,.18)"></div>
+              <div class="hm-lc" style="background:rgba(108,99,255,.4)"></div>
+              <div class="hm-lc" style="background:rgba(108,99,255,.65)"></div>
+              <div class="hm-lc" style="background:rgba(108,99,255,.9)"></div>
+            </div> More</div>
           </div>
         </div>
       </div>
@@ -775,533 +490,535 @@ function renderHabitViz(){
 </div>
 
 <script>
-/* ── STATE ── */
-let S={
-  tasks:[],courses:[],txns:[],savings:[],habits:[],
+// ── STATE ──────────────────────────────────────────────────────
+const DEFAULT = {
   profile:{name:'Jazz',avatar:'🎸'},
-  nid:{task:0,course:0,assign:0,saving:0,txn:0,habit:0},
+  tasks:[], courses:[], txns:[], savings:[], habits:[],
+  nid:{task:0,course:0,assign:0,saving:0,txn:0,habit:0}
 };
-function save(){try{localStorage.setItem('jdash4',JSON.stringify(S))}catch(e){}}
-function load(){try{const d=localStorage.getItem('jdash4');if(d)S=JSON.parse(d)}catch(e){}}
-load();
 
-/* ── FLIP CLOCK ── */
-let prevDigits={h0:'',h1:'',m0:'',m1:''};
+let S = JSON.parse(JSON.stringify(DEFAULT));
+try { const d = localStorage.getItem('jd5'); if(d) S = Object.assign(JSON.parse(JSON.stringify(DEFAULT)), JSON.parse(d)); } catch(e){}
+function save(){ try{ localStorage.setItem('jd5', JSON.stringify(S)); }catch(e){} }
 
-function setDigit(id, val){
-  const card=document.getElementById(id);
-  if(!card)return;
-  card.querySelector('.static').textContent=val;
-  card.querySelectorAll('.flap span').forEach(s=>s.textContent=val);
-}
+// ── UTILS ──────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+function today(){ return new Date().toISOString().slice(0,10); }
+function daysFromNow(d){ return Math.round((new Date(d+'T12:00:00') - new Date(new Date().toDateString())) / 86400000); }
+function addDays(d,n){ const dt=new Date(d); dt.setDate(dt.getDate()+n); return dt.toISOString().slice(0,10); }
+function fmtDate(d){ if(!d) return ''; return new Date(d+'T12:00:00').toLocaleDateString('en-CA',{month:'short',day:'numeric'}); }
+function getLast(n){ return Array.from({length:n},(_,i)=>{ const d=new Date(); d.setDate(d.getDate()-(n-1-i)); return d.toISOString().slice(0,10); }); }
 
-function flipDigit(id, oldVal, newVal){
-  if(oldVal===newVal)return;
-  const card=document.getElementById(id);
-  if(!card)return;
-  const topFlap=card.querySelector('.top-flap');
-  const botFlap=card.querySelector('.bottom-flap');
-  const staticEl=card.querySelector('.static');
+// ── MODALS ─────────────────────────────────────────────────────
+function openM(id){ $(id).classList.add('open'); }
+function closeM(id){ $(id).classList.remove('open'); }
+document.querySelectorAll('.mbg').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); }));
 
-  // Top flap shows old value folding down
-  topFlap.querySelector('span').textContent=oldVal;
-  staticEl.textContent=oldVal;
-  topFlap.style.transition='none';
-  topFlap.style.transform='rotateX(0deg)';
-  botFlap.style.transition='none';
-  botFlap.style.transform='rotateX(-90deg)';
-  botFlap.querySelector('span').textContent=newVal;
-  void card.offsetWidth;
-
-  // Fold top down
-  topFlap.style.transition='transform 0.2s ease-in';
-  topFlap.style.transform='rotateX(90deg)';
-
-  setTimeout(()=>{
-    // Switch static to new value
-    staticEl.textContent=newVal;
-    topFlap.style.transition='none';
-    topFlap.style.transform='rotateX(0deg)';
-    topFlap.querySelector('span').textContent=newVal;
-    // Unfold bottom
-    botFlap.style.transition='transform 0.2s ease-out';
-    botFlap.style.transform='rotateX(0deg)';
-    setTimeout(()=>{
-      botFlap.style.transition='none';
-      botFlap.style.transform='rotateX(-90deg)';
-    },220);
-  },220);
-}
-
-function updateFlipClock(){
-  const now=new Date();
-  const h=String(now.getHours()).padStart(2,'0');
-  const m=String(now.getMinutes()).padStart(2,'0');
-  const cur={h0:h[0],h1:h[1],m0:m[0],m1:m[1]};
-  Object.entries(cur).forEach(([k,v])=>{
-    flipDigit('fc-'+k, prevDigits[k]||v, v);
-    prevDigits[k]=v;
-  });
-  document.getElementById('flip-date').textContent=now.toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'});
-  const grEl=document.getElementById('greeting');
-  const hr=now.getHours();
-  if(grEl)grEl.textContent=hr<12?'Good morning ✦':hr<17?'Good afternoon ✦':'Good evening ✦';
-}
-
-function initFlipClock(){
-  const now=new Date();
-  const h=String(now.getHours()).padStart(2,'0');
-  const m=String(now.getMinutes()).padStart(2,'0');
-  prevDigits={h0:h[0],h1:h[1],m0:m[0],m1:m[1]};
-  Object.entries(prevDigits).forEach(([k,v])=>setDigit('fc-'+k,v));
-  document.getElementById('flip-date').textContent=now.toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'});
-  const grEl=document.getElementById('greeting');
-  const hr=now.getHours();
-  if(grEl)grEl.textContent=hr<12?'Good morning ✦':hr<17?'Good afternoon ✦':'Good evening ✦';
-}
-initFlipClock();
-setInterval(updateFlipClock,10000);
-
-/* ── WEATHER ── */
-const OWM_KEY='1bab283e1692f04224d8ed4ffd5ca5d2';
-function wxIcon(id,isDay){
-  if(id>=200&&id<300)return'⛈️';
-  if(id>=300&&id<400)return'🌦️';
-  if(id>=500&&id<600)return'🌧️';
-  if(id>=600&&id<700)return'❄️';
-  if(id>=700&&id<800)return'🌁';
-  if(id===800)return isDay?'☀️':'🌙';
-  if(id===801)return'🌤️';
-  if(id>=802)return'☁️';
-  return'🌤️';
-}
-async function fetchWeather(){
-  const g=id=>document.getElementById(id);
-  try{
-    const cur=await fetch(`https://api.openweathermap.org/data/2.5/weather?q=Brampton,CA&units=metric&appid=${OWM_KEY}`).then(r=>r.json());
-    const fore=await fetch(`https://api.openweathermap.org/data/2.5/forecast?q=Brampton,CA&units=metric&cnt=24&appid=${OWM_KEY}`).then(r=>r.json());
-    if(cur.cod!==200)throw new Error(cur.message);
-    const temp=Math.round(cur.main.temp);
-    const id=cur.weather[0].id;
-    const isDay=cur.dt>cur.sys.sunrise&&cur.dt<cur.sys.sunset;
-    if(g('wx-icon'))g('wx-icon').textContent=wxIcon(id,isDay);
-    if(g('wx-temp'))g('wx-temp').textContent=temp+'°C';
-    if(g('wx-cond'))g('wx-cond').textContent=cur.weather[0].main+' · Brampton';
-    const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    const seen=new Set(),forecast=[];
-    const todayDay=new Date().getDay();
-    for(const item of fore.list){
-      const d=new Date(item.dt*1000);
-      const dn=d.getDay();
-      const dk=d.toDateString();
-      if(!seen.has(dk)&&dn!==todayDay){seen.add(dk);forecast.push({day:days[dn],high:Math.round(item.main.temp_max),id:item.weather[0].id});}
-      if(forecast.length===3)break;
-    }
-    if(g('wx-forecast'))g('wx-forecast').innerHTML=forecast.map(f=>`
-      <div class="wx-day">
-        <div style="font-size:14px">${wxIcon(f.id,true)}</div>
-        <div style="font-size:11px;font-weight:500;margin-top:2px">${f.high}°</div>
-        <div style="font-size:10px;color:var(--tx2)">${f.day}</div>
-      </div>`).join('');
-  }catch(e){
-    const g=id=>document.getElementById(id);
-    if(g('wx-cond'))g('wx-cond').textContent='Weather unavailable';
-    if(g('wx-icon'))g('wx-icon').textContent='—';
-  }
-}
-fetchWeather();
-
-/* ── THEME ── */
+// ── THEME ──────────────────────────────────────────────────────
 function toggleTheme(){
-  const h=document.documentElement,dark=h.getAttribute('data-theme')==='dark';
-  h.setAttribute('data-theme',dark?'light':'dark');
-  document.getElementById('theme-btn').textContent=dark?'🌙 Dark mode':'☀️ Light mode';
-  setTimeout(()=>{drawLineChart();drawBarChart();},50);
+  const h=document.documentElement, dark=h.getAttribute('data-theme')==='dark';
+  h.setAttribute('data-theme', dark?'light':'dark');
+  $('theme-btn').textContent = dark ? '🌙 Dark mode' : '☀️ Light mode';
+  setTimeout(drawViz, 60);
 }
 
-/* ── TABS ── */
-function switchTab(t){
+// ── TABS ───────────────────────────────────────────────────────
+function goTab(t){
   ['home','tasks','academics','money','habits'].forEach((n,i)=>{
-    document.querySelectorAll('.sbn')[i].classList.toggle('active',n===t);
-    document.getElementById('sec-'+n).classList.toggle('active',n===t);
+    document.querySelectorAll('.sbn')[i].classList.toggle('active', n===t);
+    $('sec-'+n).classList.toggle('active', n===t);
   });
   renderAll();
 }
 
-/* ── MODALS ── */
-function openModal(id){document.getElementById(id).classList.add('open')}
-function closeModal(id){document.getElementById(id).classList.remove('open')}
-document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')}));
+// ── FLIP CLOCK ─────────────────────────────────────────────────
+let prevD = {};
+function setDigit(id, v){
+  const c=$(id); if(!c) return;
+  c.querySelector('.fc-static').textContent=v;
+  c.querySelectorAll('span').forEach(s=>s.textContent=v);
+  c.querySelector('.fc-bot').style.transform='rotateX(0deg)';
+}
+function flipDigit(id, ov, nv){
+  if(ov===nv) return;
+  const c=$(id); if(!c) return;
+  const top=c.querySelector('.fc-top'), bot=c.querySelector('.fc-bot');
+  top.querySelector('span').textContent=ov;
+  bot.querySelector('span').textContent=nv;
+  c.querySelector('.fc-static').textContent=ov;
+  top.style.transition='none'; top.style.transform='rotateX(0deg)';
+  bot.style.transition='none'; bot.style.transform='rotateX(-90deg)';
+  void c.offsetWidth;
+  top.style.transition='transform .22s ease-in'; top.style.transform='rotateX(90deg)';
+  setTimeout(()=>{
+    c.querySelector('.fc-static').textContent=nv;
+    top.style.transition='none'; top.style.transform='rotateX(0deg)';
+    top.querySelector('span').textContent=nv;
+    bot.style.transition='transform .22s ease-out'; bot.style.transform='rotateX(0deg)';
+  }, 230);
+}
+function tickClock(){
+  const now=new Date();
+  const h=String(now.getHours()).padStart(2,'0');
+  const m=String(now.getMinutes()).padStart(2,'0');
+  const cur={h0:h[0],h1:h[1],m0:m[0],m1:m[1]};
+  Object.entries(cur).forEach(([k,v])=>{ flipDigit('fc-'+k, prevD[k]??v, v); prevD[k]=v; });
+  $('fc-date').textContent = now.toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'});
+  const hr=now.getHours();
+  const g=$('greeting'); if(g) g.textContent=hr<12?'Good morning ✦':hr<17?'Good afternoon ✦':'Good evening ✦';
+}
+function initClock(){
+  const now=new Date();
+  const h=String(now.getHours()).padStart(2,'0');
+  const m=String(now.getMinutes()).padStart(2,'0');
+  prevD={h0:h[0],h1:h[1],m0:m[0],m1:m[1]};
+  Object.entries(prevD).forEach(([k,v])=>setDigit('fc-'+k,v));
+  $('fc-date').textContent=now.toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'});
+}
+initClock(); setInterval(tickClock, 10000);
 
-/* ── UTILS ── */
-function fmtDate(d){if(!d)return'';return new Date(d+'T12:00:00').toLocaleDateString('en-CA',{month:'short',day:'numeric'})}
-function today(){return new Date().toISOString().slice(0,10)}
-function addDays(d,n){const dt=new Date(d);dt.setDate(dt.getDate()+n);return dt.toISOString().slice(0,10)}
-function daysUntil(d){return Math.round((new Date(d+'T12:00:00')-new Date(new Date().toDateString()))/86400000)}
-function urgDot(d){const n=daysUntil(d);return n<=0?'dot-r':n<=3?'dot-a':'dot-g'}
-function priCls(p){return p==='High'?'ph':p==='Med'?'pm':'pl'}
-function stCls(s){return s==='done'?'sd':s==='ip'?'si':'st2'}
-function stLbl(s){return s==='done'?'Done':s==='ip'?'In progress':'To do'}
+// ── WEATHER ────────────────────────────────────────────────────
+const WX_KEY='1bab283e1692f04224d8ed4ffd5ca5d2';
+function wxEmoji(id, day){
+  if(id>=200&&id<300) return'⛈️';
+  if(id>=300&&id<400) return'🌦️';
+  if(id>=500&&id<600) return'🌧️';
+  if(id>=600&&id<700) return'❄️';
+  if(id>=700&&id<800) return'🌁';
+  if(id===800) return day?'☀️':'🌙';
+  if(id===801) return'🌤️';
+  return'☁️';
+}
+async function fetchWx(){
+  try{
+    const [cur,fore] = await Promise.all([
+      fetch(`https://api.openweathermap.org/data/2.5/weather?q=Brampton,CA&units=metric&appid=${WX_KEY}`).then(r=>r.json()),
+      fetch(`https://api.openweathermap.org/data/2.5/forecast?q=Brampton,CA&units=metric&cnt=24&appid=${WX_KEY}`).then(r=>r.json())
+    ]);
+    if(cur.cod!==200) throw new Error();
+    const isDay=cur.dt>cur.sys.sunrise&&cur.dt<cur.sys.sunset;
+    $('wx-icon').textContent=wxEmoji(cur.weather[0].id, isDay);
+    $('wx-temp').textContent=Math.round(cur.main.temp)+'°C';
+    $('wx-cond').textContent=cur.weather[0].main+' · Brampton';
+    const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const seen=new Set(), fc=[];
+    const td=new Date().getDay();
+    for(const item of fore.list){
+      const d=new Date(item.dt*1000), dk=d.toDateString();
+      if(!seen.has(dk)&&d.getDay()!==td){ seen.add(dk); fc.push({day:days[d.getDay()],high:Math.round(item.main.temp_max),id:item.weather[0].id}); }
+      if(fc.length===3) break;
+    }
+    $('wx-fc').innerHTML=fc.map(f=>`<div class="wx-day"><div style="font-size:13px">${wxEmoji(f.id,true)}</div><div style="font-size:11px;font-weight:500;margin-top:2px">${f.high}°</div><div style="font-size:10px;color:var(--tx2)">${f.day}</div></div>`).join('');
+  }catch(e){
+    $('wx-cond').textContent='Unavailable';
+    $('wx-icon').textContent='—';
+  }
+}
+fetchWx();
 
-/* ── RENDER ALL ── */
-function renderAll(){renderHome();renderTasks();renderAcademics();renderMoney();renderHabits();}
+// ── PROFILE ────────────────────────────────────────────────────
+const P_EMOJIS=['🎸','🎵','🎹','🎤','🏃','💪','🧠','📚','💻','🎯','🌙','⚡','🔥','🌿','🎨','🐉','🦊','🌊','🚀','✨','🎮','🏀','⚽','🎲','🥋'];
+let pEmoji = '';
+function openProfile(){
+  pEmoji = S.profile.avatar||'🎸';
+  $('p-name').value = S.profile.name||'';
+  $('p-emojis').innerHTML = P_EMOJIS.map(e=>`<span class="ep${e===pEmoji?' on':''}" onclick="pickPE('${e}',this)">${e}</span>`).join('');
+  openM('m-profile');
+}
+function pickPE(e,el){
+  pEmoji=e;
+  $('p-emojis').querySelectorAll('.ep').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');
+}
+function saveProfile(){
+  const name=$('p-name').value.trim(); if(!name) return;
+  S.profile={name, avatar:pEmoji};
+  save();
+  $('sb-nm').textContent=name;
+  $('sb-av').textContent=pEmoji;
+  closeM('m-profile');
+}
+function applyProfile(){
+  $('sb-nm').textContent=S.profile.name||'Jazz';
+  $('sb-av').textContent=S.profile.avatar||'🎸';
+}
 
-/* ── HOME ── */
+// ── HOME ───────────────────────────────────────────────────────
 function renderHome(){
   const t=today();
-  const due=S.tasks.filter(tk=>!tk.done&&tk.date&&tk.date>=t&&tk.date<=addDays(t,7));
-  const g=id=>document.getElementById(id);
-  if(g('hm-tasks'))g('hm-tasks').textContent=due.length;
-  const income=S.txns.filter(x=>x.amt>0).reduce((a,x)=>a+x.amt,0);
-  const spent=Math.abs(S.txns.filter(x=>x.amt<0).reduce((a,x)=>a+x.amt,0));
-  if(g('hm-income'))g('hm-income').textContent='$'+income.toFixed(0);
-  if(g('hm-remain'))g('hm-remain').textContent='$'+(income-spent).toFixed(0);
-  const grades=S.courses.map(c=>c.grade).filter(gr=>gr!=null&&gr!=='');
-  const avg=grades.length?grades.reduce((a,b)=>a+b,0)/grades.length:null;
-  if(g('hm-avg'))g('hm-avg').textContent=avg!=null?avg.toFixed(1)+'%':'—';
+  // metrics
+  const due=S.tasks.filter(tk=>!tk.done&&tk.date&&tk.date>=t&&tk.date<=addDays(t,7)).length;
+  const inc=S.txns.filter(x=>x.amt>0).reduce((a,x)=>a+x.amt,0);
+  const sp=Math.abs(S.txns.filter(x=>x.amt<0).reduce((a,x)=>a+x.amt,0));
+  const grades=S.courses.map(c=>c.grade).filter(g=>g!=null&&g!=='');
+  const avg=grades.length ? grades.reduce((a,b)=>a+b,0)/grades.length : null;
+  $('hm-due').textContent=due;
+  $('hm-inc').textContent='$'+inc.toFixed(0);
+  $('hm-rem').textContent='$'+(inc-sp).toFixed(0);
+  $('hm-avg').textContent=avg!=null?avg.toFixed(1)+'%':'—';
+
+  // deadlines
   const dl=[];
-  S.tasks.filter(tk=>!tk.done&&tk.date).forEach(tk=>{const n=daysUntil(tk.date);if(n>=-1&&n<=14)dl.push({name:tk.name,date:tk.date,tag:tk.tag});});
-  S.courses.forEach(c=>c.assignments.filter(a=>a.status!=='done'&&a.date).forEach(a=>{const n=daysUntil(a.date);if(n>=-1&&n<=14)dl.push({name:a.name,date:a.date,tag:'academics'});}));
+  S.tasks.filter(tk=>!tk.done&&tk.date).forEach(tk=>{ const n=daysFromNow(tk.date); if(n>=-1&&n<=14) dl.push({name:tk.name,date:tk.date,tag:tk.tag}); });
+  S.courses.forEach(c=>c.assignments.filter(a=>a.status!=='done'&&a.date).forEach(a=>{ const n=daysFromNow(a.date); if(n>=-1&&n<=14) dl.push({name:a.name,date:a.date,tag:'academics'}); }));
   dl.sort((a,b)=>a.date.localeCompare(b.date));
-  if(g('hm-deadlines'))g('hm-deadlines').innerHTML=dl.length?dl.slice(0,6).map(d=>`
-    <div class="row"><div class="dot ${urgDot(d.date)}"></div><span style="flex:1">${d.name}</span><span class="chip">${d.tag}</span><span style="font-size:12px;color:var(--tx2)">${daysUntil(d.date)===0?'Today':fmtDate(d.date)}</span></div>`).join(''):'<span style="font-size:13px;color:var(--tx2)">No upcoming deadlines.</span>';
-  const todos=S.tasks.filter(tk=>tk.date===t);
-  if(g('hm-todos'))g('hm-todos').innerHTML=todos.length?todos.map(tk=>`
-    <div class="row"><div class="cb${tk.done?' checked':''}" onclick="toggleDone(${tk.id},this)"></div><span class="${tk.done?'strike':''}" style="flex:1">${tk.name}</span><span class="badge ${priCls(tk.pri)}">${tk.pri}</span></div>`).join(''):'<span style="font-size:13px;color:var(--tx2)">No tasks for today.</span>';
-  // Home habit viz
-  const hmHomeCard=document.getElementById('hm-home-card');
-  if(hmHomeCard){
-    if(S.habits.length){
-      hmHomeCard.style.display='block';
-      setTimeout(()=>{
-        // Line chart
-        const canvas=document.getElementById('chart-line-home');
-        if(canvas){
-          const W=canvas.offsetWidth||canvas.parentElement.offsetWidth||400;
-          const H=130;
-          canvas.width=W*devicePixelRatio;canvas.height=H*devicePixelRatio;
-          canvas.style.width=W+'px';canvas.style.height=H+'px';
-          const ctx=canvas.getContext('2d');
-          ctx.scale(devicePixelRatio,devicePixelRatio);
-          ctx.clearRect(0,0,W,H);
-          const days=getLast(30);
-          const rates=days.map(d=>{
-            const done=S.habits.filter(h=>h.log&&h.log[d]).length;
-            return S.habits.length?done/S.habits.length:0;
-          });
-          const isDark=document.documentElement.getAttribute('data-theme')==='dark';
-          const txColor=isDark?'#8888a0':'#7a7a8a';
-          const gridColor=isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.06)';
-          const pad={t:8,r:8,b:22,l:28};
-          const cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
-          [0,0.5,1].forEach(v=>{
-            const y=pad.t+ch*(1-v);
-            ctx.strokeStyle=gridColor;ctx.lineWidth=1;
-            ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+cw,y);ctx.stroke();
-            ctx.fillStyle=txColor;ctx.font='9px Inter,sans-serif';ctx.textAlign='right';
-            ctx.fillText(Math.round(v*100)+'%',pad.l-4,y+3);
-          });
-          days.forEach((d,i)=>{
-            if(i%5===0){
-              const x=pad.l+i*(cw/(days.length-1));
-              ctx.fillStyle=txColor;ctx.font='9px Inter,sans-serif';ctx.textAlign='center';
-              ctx.fillText(new Date(d+'T12:00:00').toLocaleDateString('en-CA',{month:'short',day:'numeric'}),x,H-4);
-            }
-          });
-          const grad=ctx.createLinearGradient(0,pad.t,0,pad.t+ch);
-          grad.addColorStop(0,'rgba(108,99,255,0.3)');grad.addColorStop(1,'rgba(108,99,255,0)');
-          ctx.beginPath();
-          rates.forEach((r,i)=>{const x=pad.l+i*(cw/(rates.length-1));const y=pad.t+ch*(1-r);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
-          ctx.lineTo(pad.l+cw,pad.t+ch);ctx.lineTo(pad.l,pad.t+ch);ctx.closePath();
-          ctx.fillStyle=grad;ctx.fill();
-          ctx.beginPath();ctx.strokeStyle='#6c63ff';ctx.lineWidth=2;ctx.lineJoin='round';
-          rates.forEach((r,i)=>{const x=pad.l+i*(cw/(rates.length-1));const y=pad.t+ch*(1-r);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
-          ctx.stroke();
-          rates.forEach((r,i)=>{
-            const x=pad.l+i*(cw/(rates.length-1));const y=pad.t+ch*(1-r);
-            ctx.beginPath();ctx.arc(x,y,2.5,0,Math.PI*2);
-            ctx.fillStyle='#6c63ff';ctx.fill();
-            ctx.strokeStyle=isDark?'#1c1c26':'#fff';ctx.lineWidth=1.5;ctx.stroke();
-          });
-        }
-        // Heatmap
-        const hmHome=document.getElementById('heatmap-home');
-        if(hmHome){
-          const allLog={};
-          getLast(90).forEach(d=>{const cnt=S.habits.filter(h=>h.log&&h.log[d]).length;if(cnt>0)allLog[d]=cnt;});
-          buildHeatmap(hmHome,allLog,S.habits.length);
-        }
-      },50);
-    } else {
-      hmHomeCard.style.display='none';
-    }
-  }  if(g('hm-habits'))g('hm-habits').innerHTML=S.habits.length?S.habits.map(h=>{
-    const done=h.log&&h.log[t];
-    return`<div class="row">
-      <div class="cb${done?' checked':''}" onclick="toggleHabitHome(${h.id},this)"></div>
+  $('hm-dl').innerHTML = dl.length ? dl.slice(0,6).map(d=>{
+    const n=daysFromNow(d.date);
+    const dc=n<=0?'dr':n<=3?'da':'dg';
+    return `<div class="row"><div class="dot ${dc}"></div><span style="flex:1">${d.name}</span><span class="chip">${d.tag}</span><span style="font-size:12px;color:var(--tx2)">${n===0?'Today':fmtDate(d.date)}</span></div>`;
+  }).join('') : '<span style="font-size:13px;color:var(--tx2)">No upcoming deadlines.</span>';
+
+  // today tasks
+  const todayTasks=S.tasks.filter(tk=>tk.date===t);
+  $('hm-tasks').innerHTML = todayTasks.length ? todayTasks.map(tk=>`
+    <div class="row">
+      <div class="ck${tk.done?' on':''}" onclick="toggleTask(${tk.id});renderHome()"></div>
+      <span class="${tk.done?'strike':''}" style="flex:1">${tk.name}</span>
+      <span class="badge ${tk.pri==='High'?'ph':tk.pri==='Med'?'pm':'pl'}">${tk.pri}</span>
+    </div>`).join('') : '<span style="font-size:13px;color:var(--tx2)">No tasks for today.</span>';
+
+  // habits
+  $('hm-habits').innerHTML = S.habits.length ? S.habits.map(h=>{
+    const done=!!(h.log&&h.log[t]);
+    return `<div class="row">
+      <div class="ck${done?' on':''}" onclick="toggleHabit(${h.id});renderHome()"></div>
       <span style="flex:1">${h.emoji} ${h.name}</span>
       <span style="font-size:12px;color:var(--tx2)">🔥 ${h.streak||0}</span>
     </div>`;
-  }).join(''):'<span style="font-size:13px;color:var(--tx2)">No habits yet. Add some in the Habits tab.</span>';
+  }).join('') : '<span style="font-size:13px;color:var(--tx2)">No habits yet.</span>';
+
+  // home viz
+  const viz=$('hm-viz');
+  if(S.habits.length){
+    viz.style.display='block';
+    setTimeout(()=>{
+      drawLineChart('hm-line', 100);
+      buildHeatmap($('hm-heatmap'), getOverallLog(), S.habits.length);
+    },50);
+  } else {
+    viz.style.display='none';
+  }
 }
 
-/* ── TASKS ── */
-let tagFilter='';
-function setTagFilter(tag,el){tagFilter=tag;document.querySelectorAll('.tag-pill').forEach(p=>p.classList.remove('active'));el.classList.add('active');renderTasks();}
-function openTaskModal(){
-  S.editTaskId=null;
-  document.getElementById('task-modal-title').textContent='Add task';
-  document.getElementById('m-task-save').textContent='Add task';
-  ['m-task-name','m-task-date'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('m-task-pri').value='Med';
-  document.getElementById('m-task-tag').value='personal';
-  openModal('task-modal');
-}
+// ── TASKS ──────────────────────────────────────────────────────
+let taskFilter='';
+function setTF(f,el){ taskFilter=f; document.querySelectorAll('.tpill').forEach(p=>p.classList.remove('on')); el.classList.add('on'); renderTasks(); }
 function saveTask(){
-  const name=document.getElementById('m-task-name').value.trim();if(!name)return;
-  const obj={id:S.editTaskId||++S.nid.task,name,pri:document.getElementById('m-task-pri').value,tag:document.getElementById('m-task-tag').value,date:document.getElementById('m-task-date').value,done:false};
-  if(S.editTaskId){const idx=S.tasks.findIndex(t=>t.id===S.editTaskId);if(idx>-1){obj.done=S.tasks[idx].done;S.tasks[idx]=obj;}S.editTaskId=null;}
-  else S.tasks.push(obj);
-  save();closeModal('task-modal');renderTasks();renderHome();
+  const name=$('t-name').value.trim(); if(!name) return;
+  S.tasks.push({id:++S.nid.task, name, pri:$('t-pri').value, tag:$('t-tag').value, date:$('t-date').value, done:false});
+  save(); closeM('m-task'); $('t-name').value=''; renderTasks(); renderHome();
 }
-function toggleDone(id,el){
-  const tk=S.tasks.find(t=>t.id===id);if(!tk)return;
-  tk.done=!tk.done;el.classList.toggle('checked',tk.done);
-  const span=el.nextElementSibling;if(span)span.className=tk.done?'strike':'';
-  save();renderHome();renderTasks();
+function toggleTask(id){
+  const tk=S.tasks.find(t=>t.id===id); if(!tk) return;
+  tk.done=!tk.done; save(); renderTasks(); renderHome();
 }
-function deleteTask(id){S.tasks=S.tasks.filter(t=>t.id!==id);save();renderTasks();renderHome();}
+function deleteTask(id){ S.tasks=S.tasks.filter(t=>t.id!==id); save(); renderTasks(); renderHome(); }
 function renderTasks(){
   let tasks=[...S.tasks];
-  if(tagFilter)tasks=tasks.filter(t=>t.tag===tagFilter);
-  tasks.sort((a,b)=>{const po={High:0,Med:1,Low:2};if(a.done!==b.done)return a.done?1:-1;return po[a.pri]-po[b.pri];});
-  const el=document.getElementById('task-list');
-  const lbl=document.getElementById('task-count-label');
-  if(lbl){const open=S.tasks.filter(t=>!t.done).length;lbl.textContent=`${open} open · ${S.tasks.length} total`;}
-  if(!el)return;
-  el.innerHTML=tasks.length?tasks.map(tk=>`
-    <div class="row"><div class="cb${tk.done?' checked':''}" onclick="toggleDone(${tk.id},this)"></div><span class="${tk.done?'strike':''}" style="flex:1">${tk.name}</span><span class="badge ${priCls(tk.pri)}">${tk.pri}</span><span class="chip">${tk.tag}</span>${tk.date?`<span style="font-size:12px;color:var(--tx2)">${fmtDate(tk.date)}</span>`:''}<button class="xbtn" onclick="deleteTask(${tk.id})">✕</button></div>`).join(''):'<span style="font-size:13px;color:var(--tx2)">No tasks here.</span>';
+  if(taskFilter) tasks=tasks.filter(t=>t.tag===taskFilter);
+  tasks.sort((a,b)=>{ const p={High:0,Med:1,Low:2}; if(a.done!==b.done) return a.done?1:-1; return p[a.pri]-p[b.pri]; });
+  const open=S.tasks.filter(t=>!t.done).length;
+  $('task-lbl').textContent=`${open} open · ${S.tasks.length} total`;
+  $('task-list').innerHTML = tasks.length ? tasks.map(tk=>`
+    <div class="row">
+      <div class="ck${tk.done?' on':''}" onclick="toggleTask(${tk.id})"></div>
+      <span class="${tk.done?'strike':''}" style="flex:1">${tk.name}</span>
+      <span class="badge ${tk.pri==='High'?'ph':tk.pri==='Med'?'pm':'pl'}">${tk.pri}</span>
+      <span class="chip">${tk.tag}</span>
+      ${tk.date?`<span style="font-size:12px;color:var(--tx2)">${fmtDate(tk.date)}</span>`:''}
+      <button class="xb" onclick="deleteTask(${tk.id})">✕</button>
+    </div>`).join('') : '<span style="font-size:13px;color:var(--tx2)">No tasks here.</span>';
 }
-document.getElementById('m-task-name').addEventListener('keydown',e=>{if(e.key==='Enter')saveTask();});
+$('t-name').addEventListener('keydown', e=>{ if(e.key==='Enter') saveTask(); });
 
-/* ── ACADEMICS ── */
+// ── ACADEMICS ─────────────────────────────────────────────────
 function saveCourse(){
-  const name=document.getElementById('m-course-name').value.trim();if(!name)return;
-  const grade=parseFloat(document.getElementById('m-course-grade').value);
-  S.courses.push({id:++S.nid.course,name,grade:isNaN(grade)?null:grade,notes:'',assignments:[]});
-  save();closeModal('course-modal');renderAcademics();
+  const name=$('c-name').value.trim(); if(!name) return;
+  const g=parseFloat($('c-grade').value);
+  S.courses.push({id:++S.nid.course, name, grade:isNaN(g)?null:g, notes:'', assignments:[]});
+  save(); closeM('m-course'); $('c-name').value=''; $('c-grade').value=''; renderAcademics();
 }
-function deleteCourse(id){S.courses=S.courses.filter(c=>c.id!==id);save();renderAcademics();renderHome();}
-function updateGrade(id,val){const c=S.courses.find(c=>c.id===id);if(c){c.grade=val===''?null:parseFloat(val);save();renderAcademicsMetrics();}}
-function updateNotes(id,val){const c=S.courses.find(c=>c.id===id);if(c){c.notes=val;save();}}
-function openAssignModal(cid){
-  document.getElementById('m-assign-name').value='';document.getElementById('m-assign-date').value='';
-  document.getElementById('m-assign-status').value='todo';document.getElementById('m-assign-course').value=cid;
-  openModal('assign-modal');
-}
+function deleteCourse(id){ S.courses=S.courses.filter(c=>c.id!==id); save(); renderAcademics(); renderHome(); }
+function updateGrade(id,v){ const c=S.courses.find(c=>c.id===id); if(c){ c.grade=v===''?null:parseFloat(v); save(); renderAcademicsMeta(); } }
+function updateNotes(id,v){ const c=S.courses.find(c=>c.id===id); if(c){ c.notes=v; save(); } }
+function openAssign(cid){ $('a-name').value=''; $('a-date').value=''; $('a-status').value='todo'; $('a-cid').value=cid; openM('m-assign'); }
 function saveAssign(){
-  const name=document.getElementById('m-assign-name').value.trim();if(!name)return;
-  const cid=parseInt(document.getElementById('m-assign-course').value);
-  const c=S.courses.find(c=>c.id===cid);if(!c)return;
-  c.assignments.push({id:++S.nid.assign,name,date:document.getElementById('m-assign-date').value,status:document.getElementById('m-assign-status').value});
-  save();closeModal('assign-modal');renderAcademics();
+  const name=$('a-name').value.trim(); if(!name) return;
+  const c=S.courses.find(c=>c.id===parseInt($('a-cid').value)); if(!c) return;
+  c.assignments.push({id:++S.nid.assign, name, date:$('a-date').value, status:$('a-status').value});
+  save(); closeM('m-assign'); renderAcademics();
 }
 function cycleStatus(cid,aid){
-  const c=S.courses.find(c=>c.id===cid);if(!c)return;
-  const a=c.assignments.find(a=>a.id===aid);if(!a)return;
-  const order=['todo','ip','done'];a.status=order[(order.indexOf(a.status)+1)%3];
-  save();renderAcademics();renderHome();
+  const c=S.courses.find(c=>c.id===cid); if(!c) return;
+  const a=c.assignments.find(a=>a.id===aid); if(!a) return;
+  const o=['todo','ip','done']; a.status=o[(o.indexOf(a.status)+1)%3];
+  save(); renderAcademics(); renderHome();
 }
-function deleteAssign(cid,aid){
-  const c=S.courses.find(c=>c.id===cid);if(!c)return;
-  c.assignments=c.assignments.filter(a=>a.id!==aid);save();renderAcademics();
+function delAssign(cid,aid){
+  const c=S.courses.find(c=>c.id===cid); if(!c) return;
+  c.assignments=c.assignments.filter(a=>a.id!==aid); save(); renderAcademics();
 }
-function renderAcademicsMetrics(){
+function renderAcademicsMeta(){
   const grades=S.courses.map(c=>c.grade).filter(g=>g!=null);
   const avg=grades.length?grades.reduce((a,b)=>a+b,0)/grades.length:null;
-  const g=id=>document.getElementById(id);
-  if(g('ac-avg'))g('ac-avg').textContent=avg!=null?avg.toFixed(1)+'%':'—';
-  if(g('avg-bar'))g('avg-bar').style.width=(avg??0)+'%';
+  $('ac-avg').textContent=avg!=null?avg.toFixed(1)+'%':'—';
+  $('ac-bar').style.width=(avg??0)+'%';
   const all=S.courses.flatMap(c=>c.assignments);
   const done=all.filter(a=>a.status==='done').length;
-  if(g('ac-done'))g('ac-done').textContent=`${done} / ${all.length}`;
-  if(g('ac-done-sub'))g('ac-done-sub').textContent=all.length?Math.round(done/all.length*100)+'% completion':'';
+  $('ac-done').textContent=`${done} / ${all.length}`;
+  $('ac-sub').textContent=all.length?Math.round(done/all.length*100)+'% done':'';
 }
 function renderAcademics(){
-  renderAcademicsMetrics();
-  const el=document.getElementById('course-list');if(!el)return;
-  el.innerHTML=S.courses.map(c=>`
+  renderAcademicsMeta();
+  const stLbl=s=>s==='done'?'Done':s==='ip'?'In progress':'To do';
+  const stCls=s=>s==='done'?'sd':s==='ip'?'si':'st2';
+  $('course-list').innerHTML=S.courses.map(c=>`
     <div class="cc">
-      <div class="ch">
-        <span class="cn">${c.name}</span>
-        <div style="display:flex;align-items:center;gap:10px">
-          <div style="display:flex;align-items:center;gap:6px">
-            <span style="font-size:12px;color:var(--tx2)">Grade:</span>
-            <input type="number" min="0" max="100" value="${c.grade??''}" placeholder="—" style="width:64px;text-align:center;font-weight:600;font-size:14px" onchange="updateGrade(${c.id},this.value)" oninput="updateGrade(${c.id},this.value)"/>
-            <span style="font-size:12px;color:var(--tx2)">%</span>
-          </div>
-          <button class="xbtn" onclick="deleteCourse(${c.id})">✕</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <span style="font-size:14px;font-weight:600">${c.name}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="number" min="0" max="100" value="${c.grade??''}" placeholder="—"
+            style="width:60px;text-align:center;font-weight:600;font-size:14px"
+            oninput="updateGrade(${c.id},this.value)"/>
+          <span style="font-size:12px;color:var(--tx2)">%</span>
+          <button class="xb" onclick="deleteCourse(${c.id})">✕</button>
         </div>
       </div>
       ${c.assignments.map(a=>`
-        <div class="arow"><span class="an">${a.name}</span><span class="badge ${stCls(a.status)}" style="cursor:pointer" onclick="cycleStatus(${c.id},${a.id})" title="Click to cycle">${stLbl(a.status)}</span><span class="ad">${fmtDate(a.date)}</span><button class="xbtn" onclick="deleteAssign(${c.id},${a.id})">✕</button></div>`).join('')}
-      <button style="margin-top:10px;font-size:12px;padding:6px 12px" onclick="openAssignModal(${c.id})">+ Add assignment</button>
-      <textarea class="notes" placeholder="Quick notes for this course..." onchange="updateNotes(${c.id},this.value)">${c.notes||''}</textarea>
-    </div>`).join('')||'<span style="font-size:13px;color:var(--tx2)">No courses yet.</span>';
+        <div class="arow">
+          <span style="flex:1">${a.name}</span>
+          <span class="badge ${stCls(a.status)}" style="cursor:pointer" onclick="cycleStatus(${c.id},${a.id})">${stLbl(a.status)}</span>
+          <span style="font-size:12px;color:var(--tx2)">${fmtDate(a.date)}</span>
+          <button class="xb" onclick="delAssign(${c.id},${a.id})">✕</button>
+        </div>`).join('')}
+      <button style="margin-top:8px;font-size:12px;padding:5px 12px" onclick="openAssign(${c.id})">+ Add assignment</button>
+      <textarea class="notes" placeholder="Notes..." oninput="updateNotes(${c.id},this.value)">${c.notes||''}</textarea>
+    </div>`).join('') || '<span style="font-size:13px;color:var(--tx2)">No courses yet.</span>';
 }
 
-/* ── MONEY ── */
+// ── MONEY ──────────────────────────────────────────────────────
 function addTxn(){
-  const name=document.getElementById('txn-name').value.trim();
-  const cat=document.getElementById('txn-cat').value;
-  const amt=parseFloat(document.getElementById('txn-amt').value);
-  if(!name||isNaN(amt))return;
-  S.txns.unshift({id:++S.nid.txn,name,cat,amt:cat==='income'?Math.abs(amt):-Math.abs(amt)});
-  save();document.getElementById('txn-name').value='';document.getElementById('txn-amt').value='';
-  renderMoney();renderHome();
+  const name=$('txn-nm').value.trim(), cat=$('txn-cat').value, amt=parseFloat($('txn-amt').value);
+  if(!name||isNaN(amt)) return;
+  S.txns.unshift({id:++S.nid.txn, name, cat, amt:cat==='income'?Math.abs(amt):-Math.abs(amt)});
+  save(); $('txn-nm').value=''; $('txn-amt').value=''; renderMoney(); renderHome();
 }
-function deleteTxn(id){S.txns=S.txns.filter(t=>t.id!==id);save();renderMoney();renderHome();}
+function delTxn(id){ S.txns=S.txns.filter(t=>t.id!==id); save(); renderMoney(); renderHome(); }
 function saveSaving(){
-  const name=document.getElementById('m-sav-name').value.trim();
-  const cur=parseFloat(document.getElementById('m-sav-cur').value)||0;
-  const tgt=parseFloat(document.getElementById('m-sav-tgt').value);
-  if(!name||isNaN(tgt)||tgt<=0)return;
-  S.savings.push({id:++S.nid.saving,name,cur,tgt});
-  save();closeModal('saving-modal');renderMoney();renderHome();
+  const name=$('s-name').value.trim(), cur=parseFloat($('s-cur').value)||0, tgt=parseFloat($('s-tgt').value);
+  if(!name||isNaN(tgt)||tgt<=0) return;
+  S.savings.push({id:++S.nid.saving, name, cur, tgt});
+  save(); closeM('m-saving'); $('s-name').value=''; $('s-cur').value=''; $('s-tgt').value=''; renderMoney();
 }
-function deleteSaving(id){S.savings=S.savings.filter(s=>s.id!==id);save();renderMoney();renderHome();}
-const barCls=['fb','fp','fg','fa','fr'];
+function delSaving(id){ S.savings=S.savings.filter(s=>s.id!==id); save(); renderMoney(); }
+const BARCLS=['fb','fp','fg','fa','fr'];
 function renderMoney(){
-  const income=S.txns.filter(x=>x.amt>0).reduce((a,x)=>a+x.amt,0);
-  const spent=Math.abs(S.txns.filter(x=>x.amt<0).reduce((a,x)=>a+x.amt,0));
-  const net=income-spent;
-  const g=id=>document.getElementById(id);
-  if(g('mn-income'))g('mn-income').textContent='$'+income.toFixed(0);
-  if(g('mn-spent'))g('mn-spent').textContent='$'+spent.toFixed(0);
-  if(g('mn-remain'))g('mn-remain').textContent='$'+net.toFixed(0);
-  if(g('mn-net')){g('mn-net').textContent=(net>=0?'+':'')+' $'+Math.abs(net).toFixed(0);g('mn-net').className=net>=0?'inc':'exp';}
-  const cats={};S.txns.forEach(t=>{if(!cats[t.cat])cats[t.cat]=0;cats[t.cat]+=t.amt;});
-  if(g('budget-rows'))g('budget-rows').innerHTML=Object.entries(cats).map(([cat,amt])=>`
-    <div class="brow"><span class="bl">${cat.charAt(0).toUpperCase()+cat.slice(1)}</span><span class="${amt>=0?'inc':'exp'}">${amt>=0?'+':''} $${Math.abs(amt).toFixed(0)}</span></div>`).join('');
-  const expCats={};S.txns.filter(t=>t.amt<0).forEach(t=>{if(!expCats[t.cat])expCats[t.cat]=0;expCats[t.cat]+=Math.abs(t.amt);});
+  const inc=S.txns.filter(x=>x.amt>0).reduce((a,x)=>a+x.amt,0);
+  const sp=Math.abs(S.txns.filter(x=>x.amt<0).reduce((a,x)=>a+x.amt,0));
+  const net=inc-sp;
+  $('mn-inc').textContent='$'+inc.toFixed(0);
+  $('mn-sp').textContent='$'+sp.toFixed(0);
+  $('mn-rem').textContent='$'+net.toFixed(0);
+  const netEl=$('mn-net'); netEl.textContent=(net>=0?'+':'')+' $'+Math.abs(net).toFixed(0); netEl.className=net>=0?'inc':'exp';
+  const cats={}; S.txns.forEach(t=>{ cats[t.cat]=(cats[t.cat]||0)+t.amt; });
+  $('budget-rows').innerHTML=Object.entries(cats).map(([c,a])=>`
+    <div class="brow"><span style="color:var(--tx2)">${c[0].toUpperCase()+c.slice(1)}</span><span class="${a>=0?'inc':'exp'}">${a>=0?'+':''} $${Math.abs(a).toFixed(0)}</span></div>`).join('');
+  const expCats={}; S.txns.filter(t=>t.amt<0).forEach(t=>{ expCats[t.cat]=(expCats[t.cat]||0)+Math.abs(t.amt); });
   const maxE=Math.max(...Object.values(expCats),1);
-  if(g('cat-bars'))g('cat-bars').innerHTML=Object.entries(expCats).map(([cat,amt],i)=>`
-    <div class="cb2"><span class="cbl">${cat.charAt(0).toUpperCase()+cat.slice(1)}</span><div class="cbt"><div class="cbf ${barCls[i%barCls.length]}" style="width:${Math.round(amt/maxE*100)}%"></div></div><span class="cba">$${amt.toFixed(0)}</span></div>`).join('');
-  if(g('savings-list'))g('savings-list').innerHTML=S.savings.length?S.savings.map(sv=>{
+  $('cat-bars').innerHTML=Object.entries(expCats).map(([c,a],i)=>`
+    <div class="cb2"><span class="cbl">${c[0].toUpperCase()+c.slice(1)}</span><div class="cbt"><div class="cbf ${BARCLS[i%BARCLS.length]}" style="width:${Math.round(a/maxE*100)}%"></div></div><span class="cba">$${a.toFixed(0)}</span></div>`).join('');
+  $('savings-list').innerHTML=S.savings.length?S.savings.map(sv=>{
     const pct=Math.min(100,Math.round(sv.cur/sv.tgt*100));
-    return`<div class="sg"><div class="sh"><span class="sn">${sv.name}</span><div style="display:flex;align-items:center;gap:10px"><span class="sp">$${sv.cur.toLocaleString()} / $${sv.tgt.toLocaleString()} — ${pct}%</span><button class="xbtn" onclick="deleteSaving(${sv.id})">✕</button></div></div><div class="pbg"><div class="pf ${pct>=80?'fg':pct>=50?'fb':'fa'}" style="width:${pct}%"></div></div></div>`;
+    const bc=pct>=80?'fg':pct>=50?'fb':'fa';
+    return`<div class="sg"><div class="sh"><span style="font-weight:500">${sv.name}</span><div style="display:flex;align-items:center;gap:8px"><span style="font-size:12px;color:var(--tx2)">$${sv.cur.toLocaleString()} / $${sv.tgt.toLocaleString()} — ${pct}%</span><button class="xb" onclick="delSaving(${sv.id})">✕</button></div></div><div class="pbg"><div class="pf ${bc}" style="width:${pct}%"></div></div></div>`;
   }).join(''):'<span style="font-size:13px;color:var(--tx2)">No savings goals yet.</span>';
-  if(g('txn-list'))g('txn-list').innerHTML=S.txns.length?S.txns.map(t=>`
-    <div class="trow"><span class="tn">${t.name}</span><span class="chip">${t.cat}</span><span class="${t.amt>=0?'inc':'exp'}">${t.amt>=0?'+':''} $${Math.abs(t.amt).toFixed(0)}</span><button class="xbtn" onclick="deleteTxn(${t.id})">✕</button></div>`).join(''):'<span style="font-size:13px;color:var(--tx2)">No transactions yet.</span>';
+  $('txn-list').innerHTML=S.txns.length?S.txns.map(t=>`
+    <div class="trow"><span style="flex:1">${t.name}</span><span class="chip">${t.cat}</span><span class="${t.amt>=0?'inc':'exp'}">${t.amt>=0?'+':''} $${Math.abs(t.amt).toFixed(0)}</span><button class="xb" onclick="delTxn(${t.id})">✕</button></div>`).join(''):'<span style="font-size:13px;color:var(--tx2)">No transactions yet.</span>';
 }
 
-/* ── HABITS ── */
-const EMOJIS=['🎸','🎵','📚','💪','🧘','🏃','💧','🥗','😴','✍️','🎯','🧠','🌿','☀️','🎨','🎮','📖','🏋️','🚴','🎹','🥋','🧹','💊','🪴','🎤'];
-let selectedEmoji='🎯';
+// ── HABITS ─────────────────────────────────────────────────────
+const H_EMOJIS=['🎸','🎵','📚','💪','🧘','🏃','💧','🥗','😴','✍️','🎯','🧠','🌿','☀️','🎨','🎮','📖','🏋️','🚴','🎹','🥋','🧹','💊','🪴','🎤'];
+let hEmoji='🎯';
 
 function openHabitModal(){
-  document.getElementById('m-habit-name').value='';
-  selectedEmoji='🎯';
-  const grid=document.getElementById('emoji-grid');
-  grid.innerHTML=EMOJIS.map(e=>`<span class="epick${e===selectedEmoji?' selected':''}" onclick="selectEmoji('${e}',this)">${e}</span>`).join('');
-  openModal('habit-modal');
+  hEmoji='🎯';
+  $('h-name').value='';
+  $('h-emojis').innerHTML=H_EMOJIS.map(e=>`<span class="ep${e===hEmoji?' on':''}" onclick="pickHE('${e}',this)">${e}</span>`).join('');
+  openM('m-habit');
 }
-function selectEmoji(e,el){
-  selectedEmoji=e;
-  document.querySelectorAll('.epick').forEach(x=>x.classList.remove('selected'));
-  el.classList.add('selected');
+function pickHE(e,el){
+  hEmoji=e;
+  $('h-emojis').querySelectorAll('.ep').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');
 }
 function saveHabit(){
-  const name=document.getElementById('m-habit-name').value.trim();
-  if(!name)return;
-  S.habits.push({id:++S.nid.habit,name,emoji:selectedEmoji,streak:0,log:{}});
-  save();closeModal('habit-modal');renderHabits();renderHome();
+  const name=$('h-name').value.trim(); if(!name) return;
+  S.habits.push({id:++S.nid.habit, name, emoji:hEmoji, streak:0, log:{}});
+  save(); closeM('m-habit'); renderHabits(); renderHome();
 }
 function toggleHabit(id){
-  const h=S.habits.find(h=>h.id===id);if(!h)return;
+  const h=S.habits.find(h=>h.id===id); if(!h) return;
   const t=today();
-  if(!h.log)h.log={};
-  if(h.log[t]){
-    delete h.log[t];
-    recalcStreak(h);
-  } else {
-    h.log[t]=true;
-    recalcStreak(h);
-  }
-  save();renderHabits();renderHome();
-}
-function toggleHabitHome(id,el){
-  toggleHabit(id);
-  const h=S.habits.find(h=>h.id===id);
-  if(h){const done=h.log&&h.log[today()];el.classList.toggle('checked',done);const span=el.nextElementSibling;if(span)span.className=done?'strike':'';}
-}
-function recalcStreak(h){
-  let streak=0,d=new Date();
-  // Check today first, if not done start from yesterday
-  if(!h.log[d.toISOString().slice(0,10)])d.setDate(d.getDate()-1);
-  while(true){
-    const key=d.toISOString().slice(0,10);
-    if(h.log[key]){streak++;d.setDate(d.getDate()-1);}
+  if(!h.log) h.log={};
+  if(h.log[t]) delete h.log[t]; else h.log[t]=true;
+  // recalc streak
+  let streak=0, d=new Date();
+  if(!h.log[d.toISOString().slice(0,10)]) d.setDate(d.getDate()-1);
+  for(let i=0;i<400;i++){
+    const k=d.toISOString().slice(0,10);
+    if(h.log[k]){streak++;d.setDate(d.getDate()-1);}
     else break;
   }
   h.streak=streak;
+  save(); renderHabits(); renderHome();
 }
-function deleteHabit(id){S.habits=S.habits.filter(h=>h.id!==id);save();renderHabits();renderHome();}
+function deleteHabit(id){ S.habits=S.habits.filter(h=>h.id!==id); save(); renderHabits(); renderHome(); }
+
 function renderHabits(){
   const t=today();
-  const grid=document.getElementById('habit-grid');
-  const empty=document.getElementById('habit-empty');
-  const lbl=document.getElementById('habit-summary');
-  if(!grid)return;
+  const grid=$('habit-grid'), empty=$('habit-empty'), viz=$('habit-viz'), lbl=$('h-lbl');
+  if(!grid) return;
   if(!S.habits.length){
-    grid.innerHTML='';
-    if(empty)empty.style.display='block';
-    if(lbl)lbl.textContent='Track your daily habits.';
+    grid.innerHTML=''; empty.style.display='block'; viz.style.display='none';
+    if(lbl) lbl.textContent='Track your daily habits.';
     return;
   }
-  if(empty)empty.style.display='none';
+  empty.style.display='none'; viz.style.display='block';
   const done=S.habits.filter(h=>h.log&&h.log[t]).length;
-  if(lbl)lbl.textContent=`${done} / ${S.habits.length} done today`;
-  // Build last 7 days keys
-  const last7=[];
-  for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last7.push(d.toISOString().slice(0,10));}
-  renderHabitViz();
+  if(lbl) lbl.textContent=`${done} / ${S.habits.length} done today`;
+  const last7=getLast(7);
   grid.innerHTML=S.habits.map(h=>{
-    const isDone=h.log&&h.log[t];
-    const dots=last7.map(d=>`<div class="wdot${h.log&&h.log[d]?' filled':''}"></div>`).join('');
-    const isHot=(h.streak||0)>=3;
-    return`<div class="habit-card${isDone?' done':''}" onclick="toggleHabit(${h.id})">
-      <button class="xbtn habit-del" onclick="event.stopPropagation();deleteHabit(${h.id})">✕</button>
-      <div class="habit-emoji">${h.emoji}</div>
-      <div class="habit-name">${h.name}</div>
-      <div class="habit-streak${isHot?' hot':''}">🔥 ${h.streak||0} day streak</div>
-      <div class="week-dots">${dots}</div>
-      <div class="habit-check">${isDone?'✓':''}</div>
+    const isDone=!!(h.log&&h.log[t]);
+    const hot=(h.streak||0)>=3;
+    const dots=last7.map(d=>`<div class="wd${h.log&&h.log[d]?' on':''}"></div>`).join('');
+    return`<div class="hcard${isDone?' done':''}" onclick="toggleHabit(${h.id})">
+      <button class="xb hdel" onclick="event.stopPropagation();deleteHabit(${h.id})">✕</button>
+      <div class="hemoji">${h.emoji}</div>
+      <div class="hname">${h.name}</div>
+      <div class="hstreak${hot?' hot':''}">🔥 ${h.streak||0} day streak</div>
+      <div class="wdots">${dots}</div>
+      <div class="hcheck">${isDone?'✓':''}</div>
     </div>`;
   }).join('');
+  setTimeout(drawViz, 50);
 }
 
-/* ── POMODORO ── */
-let pSec=25*60,pTotal=25*60,pRun=false,pBreak=false,pTimer=null;
-function pRender(){
-  document.getElementById('ptime').textContent=String(Math.floor(pSec/60)).padStart(2,'0')+':'+String(pSec%60).padStart(2,'0');
-  document.getElementById('pbar').style.width=Math.round(pSec/pTotal*100)+'%';
-}
-function pomoSS(){
-  if(pRun){clearInterval(pTimer);pRun=false;document.getElementById('pstart').textContent='▶ Start';}
-  else{pRun=true;document.getElementById('pstart').textContent='⏸ Pause';
-    pTimer=setInterval(()=>{if(pSec<=0){clearInterval(pTimer);pRun=false;document.getElementById('pstart').textContent='▶ Start';return;}pSec--;pRender();},1000);}
-}
-function pomoReset(){clearInterval(pTimer);pRun=false;pSec=pTotal;document.getElementById('pstart').textContent='▶ Start';pRender();}
-function pomoMode(){
-  pBreak=!pBreak;clearInterval(pTimer);pRun=false;
-  pTotal=pBreak?5*60:25*60;pSec=pTotal;
-  document.getElementById('plabel').textContent=pBreak?'Break time':'Focus session';
-  document.getElementById('pmode').textContent=pBreak?'Switch to focus':'Switch to break';
-  document.getElementById('pstart').textContent='▶ Start';pRender();
+// ── VISUALIZATIONS ─────────────────────────────────────────────
+function getOverallLog(){
+  const log={};
+  getLast(90).forEach(d=>{ const cnt=S.habits.filter(h=>h.log&&h.log[d]).length; if(cnt>0) log[d]=cnt; });
+  return log;
 }
 
-/* ── INIT ── */
+function drawLineChart(canvasId, h){
+  const canvas=$(canvasId); if(!canvas||!S.habits.length) return;
+  const W=canvas.parentElement.offsetWidth||360;
+  const H=h||130;
+  canvas.width=W*devicePixelRatio; canvas.height=H*devicePixelRatio;
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');
+  ctx.scale(devicePixelRatio,devicePixelRatio);
+  ctx.clearRect(0,0,W,H);
+  const days=getLast(30);
+  const rates=days.map(d=>{ const done=S.habits.filter(h=>h.log&&h.log[d]).length; return S.habits.length?done/S.habits.length:0; });
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  const tc=dark?'#8888a0':'#7a7a8a', gc=dark?'rgba(255,255,255,.05)':'rgba(0,0,0,.05)';
+  const pad={t:8,r:8,b:22,l:28};
+  const cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
+  [0,.5,1].forEach(v=>{
+    const y=pad.t+ch*(1-v);
+    ctx.strokeStyle=gc; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+cw,y); ctx.stroke();
+    ctx.fillStyle=tc; ctx.font='9px Inter,sans-serif'; ctx.textAlign='right';
+    ctx.fillText(Math.round(v*100)+'%',pad.l-4,y+3);
+  });
+  days.forEach((d,i)=>{ if(i%5===0){ const x=pad.l+i*(cw/(days.length-1)); ctx.fillStyle=tc; ctx.font='9px Inter,sans-serif'; ctx.textAlign='center'; ctx.fillText(new Date(d+'T12:00:00').toLocaleDateString('en-CA',{month:'short',day:'numeric'}),x,H-4); } });
+  const grad=ctx.createLinearGradient(0,pad.t,0,pad.t+ch);
+  grad.addColorStop(0,'rgba(108,99,255,.3)'); grad.addColorStop(1,'rgba(108,99,255,0)');
+  ctx.beginPath();
+  rates.forEach((r,i)=>{ const x=pad.l+i*(cw/(rates.length-1)), y=pad.t+ch*(1-r); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+  ctx.lineTo(pad.l+cw,pad.t+ch); ctx.lineTo(pad.l,pad.t+ch); ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
+  ctx.beginPath(); ctx.strokeStyle='#6c63ff'; ctx.lineWidth=2; ctx.lineJoin='round';
+  rates.forEach((r,i)=>{ const x=pad.l+i*(cw/(rates.length-1)), y=pad.t+ch*(1-r); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+  ctx.stroke();
+  rates.forEach((r,i)=>{ const x=pad.l+i*(cw/(rates.length-1)), y=pad.t+ch*(1-r); ctx.beginPath(); ctx.arc(x,y,2.5,0,Math.PI*2); ctx.fillStyle='#6c63ff'; ctx.fill(); ctx.strokeStyle=dark?'#1c1c26':'#fff'; ctx.lineWidth=1.5; ctx.stroke(); });
+}
+
+function drawBarChart(){
+  const canvas=$('viz-bar'); if(!canvas||!S.habits.length) return;
+  const W=canvas.parentElement.offsetWidth||360, H=130;
+  canvas.width=W*devicePixelRatio; canvas.height=H*devicePixelRatio;
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');
+  ctx.scale(devicePixelRatio,devicePixelRatio);
+  ctx.clearRect(0,0,W,H);
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  const tc=dark?'#8888a0':'#7a7a8a', gc=dark?'rgba(255,255,255,.05)':'rgba(0,0,0,.05)';
+  const counts=S.habits.map(h=>Object.keys(h.log||{}).length);
+  const maxC=Math.max(...counts,1);
+  const pad={t:10,r:8,b:28,l:28};
+  const cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
+  const bw=Math.min(30,(cw/S.habits.length)*0.55), gap=cw/S.habits.length;
+  const cols=['#6c63ff','#4a90d9','#4caf7d','#e8a838','#e05c5c','#a09df7'];
+  [0,.5,1].forEach(v=>{ const y=pad.t+ch*(1-v); ctx.strokeStyle=gc; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+cw,y); ctx.stroke(); ctx.fillStyle=tc; ctx.font='9px Inter,sans-serif'; ctx.textAlign='right'; ctx.fillText(Math.round(v*maxC),pad.l-4,y+3); });
+  S.habits.forEach((h,i)=>{
+    const x=pad.l+gap*i+(gap-bw)/2, bh=(counts[i]/maxC)*ch, y=pad.t+ch-bh;
+    ctx.fillStyle=cols[i%cols.length];
+    ctx.beginPath(); const rr=3; ctx.moveTo(x+rr,y); ctx.lineTo(x+bw-rr,y); ctx.quadraticCurveTo(x+bw,y,x+bw,y+rr); ctx.lineTo(x+bw,y+bh); ctx.lineTo(x,y+bh); ctx.lineTo(x,y+rr); ctx.quadraticCurveTo(x,y,x+rr,y); ctx.closePath(); ctx.fill();
+    ctx.fillStyle=tc; ctx.font='11px Inter,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(h.emoji, x+bw/2, H-6);
+    if(counts[i]>0){ ctx.fillStyle=tc; ctx.font='9px Inter,sans-serif'; ctx.fillText(counts[i],x+bw/2,y-3); }
+  });
+}
+
+function buildHeatmap(container, logObj, maxVal){
+  if(!container) return;
+  const now=new Date();
+  const start=new Date(now); start.setDate(start.getDate()-89);
+  start.setDate(start.getDate()-start.getDay());
+  const weeks=[];
+  const d=new Date(start);
+  while(d<=now){
+    const week=[]; for(let i=0;i<7;i++){week.push(new Date(d));d.setDate(d.getDate()+1);} weeks.push(week);
+  }
+  const mLabels=weeks.map(w=>w[0].getDate()<=7?w[0].toLocaleDateString('en-CA',{month:'short'}):'');
+  const mv=maxVal||Math.max(...Object.values(logObj).map(v=>typeof v==='number'?v:1),1);
+  let html=`<div class="hm-wrap"><div class="hm-outer"><div class="hm-labels">`;
+  ['S','M','T','W','T','F','S'].forEach(l=>html+=`<div class="hm-lbl">${l}</div>`);
+  html+=`</div><div class="hm-grid"><div class="hm-months">`;
+  mLabels.forEach(l=>html+=`<div style="width:15px;text-align:center">${l}</div>`);
+  html+=`</div><div class="hm-cols">`;
+  weeks.forEach(week=>{
+    html+=`<div class="hm-col">`;
+    week.forEach(day=>{
+      const k=day.toISOString().slice(0,10), fut=day>now;
+      let lvl=0;
+      if(!fut&&logObj[k]){ const v=typeof logObj[k]==='number'?logObj[k]/mv:1; lvl=v>=.75?4:v>=.5?3:v>=.25?2:1; }
+      html+=`<div class="hm-cell${lvl?' l'+lvl:''}" title="${day.toLocaleDateString('en-CA',{month:'short',day:'numeric'})}"></div>`;
+    });
+    html+=`</div>`;
+  });
+  html+=`</div></div></div></div>`;
+  container.innerHTML=html;
+}
+
+function drawViz(){
+  if(!S.habits.length) return;
+  drawLineChart('viz-line', 130);
+  drawBarChart();
+  buildHeatmap($('viz-heatmap'), getOverallLog(), S.habits.length);
+}
+
+// ── POMODORO ───────────────────────────────────────────────────
+let pSec=25*60, pTotal=25*60, pRun=false, pBreak=false, pTimer=null;
+function pRender(){ $('p-time').textContent=String(Math.floor(pSec/60)).padStart(2,'0')+':'+String(pSec%60).padStart(2,'0'); $('p-bar').style.width=Math.round(pSec/pTotal*100)+'%'; }
+function pomoSS(){ if(pRun){clearInterval(pTimer);pRun=false;$('p-start').textContent='▶ Start';}else{pRun=true;$('p-start').textContent='⏸ Pause';pTimer=setInterval(()=>{if(pSec<=0){clearInterval(pTimer);pRun=false;$('p-start').textContent='▶ Start';return;}pSec--;pRender();},1000);} }
+function pomoReset(){ clearInterval(pTimer);pRun=false;pSec=pTotal;$('p-start').textContent='▶ Start';pRender(); }
+function pomoMode(){ pBreak=!pBreak;clearInterval(pTimer);pRun=false;pTotal=pBreak?5*60:25*60;pSec=pTotal;$('p-lbl').textContent=pBreak?'Break time':'Focus session';$('p-mode').textContent=pBreak?'Focus mode':'Break mode';$('p-start').textContent='▶ Start';pRender(); }
+
+// ── RENDER ALL ─────────────────────────────────────────────────
+function renderAll(){ renderHome(); renderTasks(); renderAcademics(); renderMoney(); renderHabits(); }
+
+// ── INIT ───────────────────────────────────────────────────────
 applyProfile();
 renderAll();
 </script>
