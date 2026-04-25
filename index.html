@@ -62,6 +62,11 @@ function selectProfileEmoji(e,el){
   document.querySelectorAll('#profile-emoji-grid .epick').forEach(x=>x.classList.remove('selected'));
   el.classList.add('selected');
 }
+function selectProfileEmoji(e,el){
+  profileEmoji=e;
+  document.querySelectorAll('#profile-emoji-grid .epick').forEach(x=>x.classList.remove('selected'));
+  el.classList.add('selected');
+}
 function saveProfile(){
   const name=document.getElementById('m-profile-name').value.trim();
   if(!name)return;
@@ -70,7 +75,8 @@ function saveProfile(){
   S.profile.avatar=profileEmoji;
   document.getElementById('sb-name').textContent=name;
   document.getElementById('sb-avatar').textContent=profileEmoji;
-  save();closeModal('profile-modal');
+  save();
+  closeModal('profile-modal');
 }
 function applyProfile(){
   if(!S.profile)return;
