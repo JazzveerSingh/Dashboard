@@ -49,19 +49,27 @@ body{font-family:var(--f);background:var(--bg);color:var(--tx);min-height:100vh;
 
 /* ── PROFILE ── */
 const PROFILE_EMOJIS=['🎸','🎵','🎹','🎤','🏃','💪','🧠','📚','💻','🎯','🌙','⚡','🔥','🌿','🎨','🐉','🦊','🐺','🌊','🚀','✨','🎮','🎲','🏀','⚽'];
+let profileEmoji='🎸';
 function openProfileEdit(){
+  profileEmoji=S.profile.avatar||'🎸';
   document.getElementById('m-profile-name').value=S.profile.name||'';
-  selectedEmoji=S.profile.avatar||'🎸';
   const grid=document.getElementById('profile-emoji-grid');
-  grid.innerHTML=PROFILE_EMOJIS.map(e=>`<span class="epick${e===selectedEmoji?' selected':''}" onclick="selectEmoji('${e}',this)">${e}</span>`).join('');
+  grid.innerHTML=PROFILE_EMOJIS.map(e=>`<span class="epick${e===profileEmoji?' selected':''}" onclick="selectProfileEmoji('${e}',this)">${e}</span>`).join('');
   openModal('profile-modal');
+}
+function selectProfileEmoji(e,el){
+  profileEmoji=e;
+  document.querySelectorAll('#profile-emoji-grid .epick').forEach(x=>x.classList.remove('selected'));
+  el.classList.add('selected');
 }
 function saveProfile(){
   const name=document.getElementById('m-profile-name').value.trim();
   if(!name)return;
-  S.profile={name,avatar:selectedEmoji};
+  if(!S.profile)S.profile={};
+  S.profile.name=name;
+  S.profile.avatar=profileEmoji;
   document.getElementById('sb-name').textContent=name;
-  document.getElementById('sb-avatar').textContent=selectedEmoji;
+  document.getElementById('sb-avatar').textContent=profileEmoji;
   save();closeModal('profile-modal');
 }
 function applyProfile(){
@@ -855,7 +863,7 @@ function wxIcon(id,isDay){
   if(id>=300&&id<400)return'🌦️';
   if(id>=500&&id<600)return'🌧️';
   if(id>=600&&id<700)return'❄️';
-  if(id>=700&&id<800)return'🌫️';
+  if(id>=700&&id<800)return'🌁';
   if(id===800)return isDay?'☀️':'🌙';
   if(id===801)return'🌤️';
   if(id>=802)return'☁️';
