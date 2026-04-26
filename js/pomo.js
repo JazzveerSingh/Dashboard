@@ -11,15 +11,15 @@ function pRen() {
 function pomoSS() {
   if (pR) {
     clearInterval(pI); pR = false;
-    document.getElementById('p-start').textContent = '&#9654; Start';
+    document.getElementById('p-start').innerHTML = '&#9654; Start';
     document.title = 'Jazz\'s Dashboard';
   } else {
     pR = true;
-    document.getElementById('p-start').textContent = '&#9646;&#9646; Pause';
+    document.getElementById('p-start').innerHTML = '&#9646;&#9646; Pause';
     pI = setInterval(function () {
       if (pS <= 0) {
         clearInterval(pI); pR = false;
-        document.getElementById('p-start').textContent = '&#9654; Start';
+        document.getElementById('p-start').innerHTML = '&#9654; Start';
         document.title = 'Jazz\'s Dashboard';
         // Browser notification if permitted
         if (Notification.permission === 'granted') {
@@ -36,7 +36,7 @@ function pomoSS() {
 
 function pomoReset() {
   clearInterval(pI); pR = false; pS = pT;
-  document.getElementById('p-start').textContent = '&#9654; Start';
+  document.getElementById('p-start').innerHTML = '&#9654; Start';
   document.title = 'Jazz\'s Dashboard';
   pRen();
 }
@@ -46,7 +46,7 @@ function pomoMode() {
   pT = pB ? 5 * 60 : 25 * 60; pS = pT;
   document.getElementById('p-lbl').textContent = pB ? 'Break time' : 'Focus session';
   document.getElementById('p-mode').textContent = pB ? 'Focus mode' : 'Break mode';
-  document.getElementById('p-start').textContent = '&#9654; Start';
+  document.getElementById('p-start').innerHTML = '&#9654; Start';
   document.title = 'Jazz\'s Dashboard';
   pRen();
 }
