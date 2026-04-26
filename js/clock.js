@@ -3,8 +3,9 @@ let prevD = {};
 function setD(id, v) {
   const c = document.getElementById(id); if (!c) return;
   const st = c.querySelector('.fc-st'); if (st) st.textContent = v;
-  c.querySelectorAll('span').forEach(s => s.textContent = v);
-  const bt = c.querySelector('.bt'); if (bt) bt.style.transform = 'rotateX(0deg)';
+  const tp = c.querySelector('.tp span'); if (tp) tp.textContent = v;
+  const bt = c.querySelector('.bt span'); if (bt) bt.textContent = v;
+  const btEl = c.querySelector('.bt'); if (btEl) btEl.style.transform = 'rotateX(0deg)';
 }
 
 function flipD(id, ov, nv) {
@@ -55,5 +56,5 @@ function initClock() {
   const fd = document.getElementById('fc-date');
   if (fd) fd.textContent = now.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
   updateGreeting();
-  setInterval(tickClock, 10000);
+  setInterval(tickClock, 1000);
 }
