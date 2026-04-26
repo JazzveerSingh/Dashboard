@@ -61,6 +61,7 @@ function renderAcaMeta() {
   const avg = grades.length ? grades.reduce((a, b) => a + b, 0) / grades.length : null;
   $('ac-avg').textContent = avg != null ? avg.toFixed(1) + '%' : '—';
   $('ac-bar').style.width = (avg ?? 0) + '%';
+  const sp = $('ac-spark'); if (sp) sp.innerHTML = ghGpaSpark();
   const all = S.assignments, done = all.filter(a => a.status === 'done').length;
   $('ac-done').textContent = `${done} / ${all.length}`;
   const weighted = all.filter(a => a.weight != null);
@@ -98,15 +99,20 @@ function renderAcademics() {
     const assigns = S.assignments.filter(a => a.course_id === c.id);
     return `<div class="cc">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-size:14px;font-weight:600">${esc(c.name)}</span>
-        <div style="display:flex;align-items:center;gap:7px">
+        <div style="display:flex;align-items:center;gap:8px;min-width:0">
+          <span style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.name)}</span>
+          <span style="display:inline-flex;align-items:center;gap:2px;flex-shrink:0" id="gh-sp-${c.id}">${ghInlineSpark(c.id)}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:7px;flex-shrink:0;margin-left:8px">
           <input type="number" min="0" max="100" value="${c.grade ?? ''}" placeholder="—"
             style="width:56px;text-align:center;font-weight:600;font-size:14px"
-            oninput="updateGrade(${c.id},this.value)"/>
+            oninput="updateGrade(${c.id},this.value)"
+            onblur="ghAppend(${c.id},this.value)"/>
           <span style="font-size:11px;color:var(--tx2)">%</span>
           <button class="xb" onclick="deleteCourse(${c.id})">✕</button>
         </div>
       </div>
+      ${ghHistoryHtml(c)}
       ${assigns.map(a => `<div class="arow">
         <span style="flex:1">${esc(a.name)}</span>
         ${a.weight != null ? `<span style="font-size:11px;color:var(--tx2);white-space:nowrap">${a.weight}%</span>` : ''}
