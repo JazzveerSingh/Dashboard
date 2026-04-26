@@ -16,7 +16,9 @@ document.querySelectorAll('.mbg').forEach(m => m.addEventListener('click', e => 
 // ── Theme ─────────────────────────────────────────────────────
 function toggleTheme() {
   const h = document.documentElement, dark = h.getAttribute('data-theme') === 'dark';
-  h.setAttribute('data-theme', dark ? 'light' : 'dark');
+  const next = dark ? 'light' : 'dark';
+  h.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
   $('theme-btn').textContent = dark ? '🌙 Dark mode' : '☀️ Light mode';
   setTimeout(drawViz, 60);
 }

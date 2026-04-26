@@ -60,6 +60,12 @@ function showAuthError(msg) {
 
 // Check for existing session on page load
 window.addEventListener('load', async () => {
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme) {
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    const btn = document.getElementById('theme-btn');
+    if (btn) btn.textContent = savedTheme === 'dark' ? '☀️ Light mode' : '🌙 Dark mode';
+  }
   const { data } = await db.auth.getSession();
   if (data.session) {
     await onSignIn(data.session.user);

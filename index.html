@@ -58,6 +58,7 @@
     <div class="mrow"><label>Name</label><input id="a-name" type="text" placeholder="Assignment name"/></div>
     <div class="mrow"><label>Due date</label><input id="a-date" type="date"/></div>
     <div class="mrow"><label>Status</label><select id="a-status"><option value="todo">To do</option><option value="ip">In progress</option><option value="done">Done</option></select></div>
+    <div class="mrow"><label>Weight (%)</label><input id="a-weight" type="number" min="0" max="100" placeholder="e.g. 20 (optional)"/></div>
     <input type="hidden" id="a-cid"/>
     <div class="mbtns"><button onclick="closeM('m-assign')">Cancel</button><button class="bp" onclick="saveAssign()">Add</button></div>
   </div>

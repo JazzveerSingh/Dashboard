@@ -26,14 +26,16 @@ async function updateNotes(id, v) {
 }
 
 function openAssign(cid) {
-  $('a-name').value = ''; $('a-date').value = ''; $('a-status').value = 'todo'; $('a-cid').value = cid;
+  $('a-name').value = ''; $('a-date').value = ''; $('a-status').value = 'todo'; $('a-weight').value = ''; $('a-cid').value = cid;
   openM('m-assign');
 }
 
 async function saveAssign() {
   const name = $('a-name').value.trim(); if (!name) return;
   const cid = parseInt($('a-cid').value);
-  const row = await dbInsert('assignments', { course_id: cid, name, due_date: $('a-date').value || null, status: $('a-status').value });
+  const wv = $('a-weight').value;
+  const weight = wv !== '' ? parseFloat(wv) : null;
+  const row = await dbInsert('assignments', { course_id: cid, name, due_date: $('a-date').value || null, status: $('a-status').value, weight });
   if (row) { S.assignments.push(row); closeM('m-assign'); renderAcademics(); }
 }
 
@@ -58,7 +60,14 @@ function renderAcaMeta() {
   $('ac-bar').style.width = (avg ?? 0) + '%';
   const all = S.assignments, done = all.filter(a => a.status === 'done').length;
   $('ac-done').textContent = `${done} / ${all.length}`;
-  $('ac-sub').textContent = all.length ? Math.round(done / all.length * 100) + '% complete' : '';
+  const weighted = all.filter(a => a.weight != null);
+  if (weighted.length) {
+    const totalWeight = weighted.reduce((s, a) => s + a.weight, 0);
+    const doneWeight = weighted.filter(a => a.status === 'done').reduce((s, a) => s + a.weight, 0);
+    $('ac-sub').textContent = totalWeight > 0 ? Math.round(doneWeight / totalWeight * 100) + '% by weight' : '';
+  } else {
+    $('ac-sub').textContent = all.length ? Math.round(done / all.length * 100) + '% complete' : '';
+  }
 }
 
 function renderAcademics() {
@@ -80,6 +89,7 @@ function renderAcademics() {
       </div>
       ${assigns.map(a => `<div class="arow">
         <span style="flex:1">${esc(a.name)}</span>
+        ${a.weight != null ? `<span style="font-size:11px;color:var(--tx2);white-space:nowrap">${a.weight}%</span>` : ''}
         <span class="badge ${sc(a.status)}" style="cursor:pointer" onclick="cycleStatus(${a.id})" title="Click to cycle">${sl(a.status)}</span>
         <span style="font-size:11px;color:var(--tx2)">${fmt(a.due_date)}</span>
         <button class="xb" onclick="delAssign(${a.id})">✕</button>
