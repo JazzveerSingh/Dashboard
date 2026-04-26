@@ -104,31 +104,22 @@ function gcCalcP({ completed, remaining, target }) {
 
 // ── Render ────────────────────────────────────────────────────
 function renderCalc() {
-  const sec = document.getElementById('sec-grades');
-  if (!sec || !sec.classList.contains('active')) return;
-  const c = gcActive(), res = gcCalc(c);
-  sec.innerHTML = `
-    <div class="hdr">
-      <div class="hdr-l"><h1>Grade Calculator</h1><p>Project your final grade in real time.</p></div>
-      <div style="display:flex;gap:8px">
-        <button onclick="gcExport()" style="font-size:12px;padding:6px 12px">Export</button>
-        <button class="bp" onclick="gcAddCourse()">+ Course</button>
-      </div>
-    </div>
-    <div class="content">
-      ${gcTabsHtml()}
-      ${gcBodyHtml(c, res)}
-    </div>`;
+  // Calculator now lives inside the Academics tab
+  if (typeof renderAcademics === 'function') renderAcademics();
 }
 
 function gcTabsHtml() {
   const active = gcActive();
-  return `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+  return `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
     ${GC.courses.map(c => `
       <div style="display:flex;align-items:center">
         <span class="tpill${c.id === active.id ? ' on' : ''}" onclick="gcSwitchCourse('${c.id}')">${gcEsc(c.name)}</span>
         ${GC.courses.length > 1 ? `<button class="xb" onclick="gcRemoveCourse('${c.id}')" style="margin-left:1px">✕</button>` : ''}
       </div>`).join('')}
+    <div style="margin-left:auto;display:flex;gap:6px">
+      <button onclick="gcExport()" style="font-size:12px;padding:4px 10px">Export</button>
+      <button class="bp" onclick="gcAddCourse()" style="font-size:12px;padding:4px 10px">+ Course</button>
+    </div>
   </div>`;
 }
 

@@ -24,7 +24,7 @@ function toggleTheme() {
 }
 
 // ── Tabs ──────────────────────────────────────────────────────
-const TABS = ['home', 'tasks', 'academics', 'money', 'habits', 'grades'];
+const TABS = ['home', 'tasks', 'academics', 'money', 'habits'];
 function goTab(t) {
   TABS.forEach((n, i) => {
     document.querySelectorAll('.sbn')[i].classList.toggle('active', n === t);
@@ -47,7 +47,6 @@ function initKeyboard() {
     if (e.key === '3') goTab('academics');
     if (e.key === '4') goTab('money');
     if (e.key === '5') goTab('habits');
-    if (e.key === '6') goTab('grades');
   });
 }
 
@@ -140,4 +139,4 @@ function spawnConfetti() {
 }
 
 // ── Render all ────────────────────────────────────────────────
-function renderAll() { renderHome(); renderTasks(); renderAcademics(); renderMoney(); renderHabits(); renderCalc(); }
+function renderAll() { renderHome(); renderTasks(); renderAcademics(); renderMoney(); renderHabits(); }

@@ -1,3 +1,6 @@
+let acTab = 'courses';
+function switchAcTab(t) { acTab = t; renderAcademics(); }
+
 async function saveCourse() {
   const name = $('c-name').value.trim(); if (!name) return;
   const g = parseFloat($('c-grade').value);
@@ -71,10 +74,27 @@ function renderAcaMeta() {
 }
 
 function renderAcademics() {
+  // Show/hide header elements based on active sub-tab
+  const statsEl = document.querySelector('#sec-academics .content > .g2');
+  const addBtn = document.querySelector('#sec-academics .hdr .bp');
+  if (statsEl) statsEl.style.display = acTab === 'courses' ? '' : 'none';
+  if (addBtn) addBtn.style.display = acTab === 'courses' ? '' : 'none';
+
+  const subTabs = `<div style="display:flex;gap:6px;margin-bottom:14px">
+    <span class="tpill${acTab === 'courses' ? ' on' : ''}" onclick="switchAcTab('courses')">Courses</span>
+    <span class="tpill${acTab === 'calculator' ? ' on' : ''}" onclick="switchAcTab('calculator')">Grade Calculator</span>
+  </div>`;
+
+  if (acTab === 'calculator') {
+    const c = gcActive(), res = gcCalc(c);
+    $('course-list').innerHTML = subTabs + gcTabsHtml() + gcBodyHtml(c, res);
+    return;
+  }
+
   renderAcaMeta();
   const sl = s => s === 'done' ? 'Done' : s === 'ip' ? 'In progress' : 'To do';
   const sc = s => s === 'done' ? 'sd' : s === 'ip' ? 'si' : 'st2';
-  $('course-list').innerHTML = S.courses.map(c => {
+  const coursesHtml = S.courses.map(c => {
     const assigns = S.assignments.filter(a => a.course_id === c.id);
     return `<div class="cc">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -98,4 +118,6 @@ function renderAcademics() {
       <textarea class="notes" placeholder="Notes…" oninput="updateNotes(${c.id},this.value)">${esc(c.notes || '')}</textarea>
     </div>`;
   }).join('') || '<div class="empty-state card"><div class="ei">📚</div><div class="et">No courses yet</div><div class="es">Add your first course to get started</div></div>';
+
+  $('course-list').innerHTML = subTabs + coursesHtml;
 }
