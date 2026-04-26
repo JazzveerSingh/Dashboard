@@ -84,7 +84,7 @@ function renderHome() {
   const due = S.tasks.filter(tk => !tk.done && tk.due_date && tk.due_date >= t && tk.due_date <= addD(t, 7)).length;
   const inc = S.transactions.filter(x => x.amount > 0).reduce((a, x) => a + x.amount, 0);
   const sp = Math.abs(S.transactions.filter(x => x.amount < 0).reduce((a, x) => a + x.amount, 0));
-  const grades = S.courses.map(c => c.grade).filter(g => g != null);
+  const grades = S.courses.map(c => caEffGrade(c.id, S.assignments.filter(a => a.course_id === c.id))).filter(g => g != null);
   const avg = grades.length ? grades.reduce((a, b) => a + b, 0) / grades.length : null;
 
   $('hm-due').textContent = due;
