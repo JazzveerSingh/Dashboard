@@ -19,13 +19,14 @@ function ghBuildAssignData(cid) {
   for (const a of assigns) {
     const d = asgn[a.id] || {};
     if (d.score == null) continue;
-    const ts = d.score_ts || a.created_at || null;
+    const ts = a.created_at || d.score_ts || null;
     if (!ts) continue;
     result.push({
       id: a.id, name: a.name,
       score: d.score, max: d.max ?? 100, weight: d.weight ?? 1,
       pct: d.score / (d.max ?? 100) * 100,
-      ts, isTest: d.type === 'test'
+      ts, loggedAt: a.created_at || d.score_ts,
+      isTest: d.type === 'test'
     });
   }
   return result.sort((a, b) => a.ts.localeCompare(b.ts));
@@ -170,8 +171,8 @@ function ghChartDual(cid, courseColor) {
   if (toggle.showScores) {
     dotsSvg = assignData.map(a => {
       const cx = toX(a.ts), cy = toY(a.pct);
-      const ts = new Date(a.ts).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
-      const title = `${a.name}&#10;${a.score}/${a.max} · ${a.pct.toFixed(1)}%&#10;${ts}`;
+      const logTs = new Date(a.loggedAt || a.ts).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
+      const title = `${a.name}&#10;${a.score}/${a.max} · ${a.pct.toFixed(1)}%&#10;${logTs}`;
       if (a.isTest) {
         const r = 4.5;
         const dp = `${cx.toFixed(1)},${(cy - r).toFixed(1)} ${(cx + r).toFixed(1)},${cy.toFixed(1)} ${cx.toFixed(1)},${(cy + r).toFixed(1)} ${(cx - r).toFixed(1)},${cy.toFixed(1)}`;
