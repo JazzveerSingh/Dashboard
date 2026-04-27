@@ -5,49 +5,54 @@ const ghToggles = new Map(); // cid -> { showScores: bool, showAvg: bool }
 // ── Assignment-based data ─────────────────────────────────────
 function ghBuildAssignData(cid) {
   const assigns = (window.S?.assignments || []).filter(a => String(a.course_id) === String(cid));
-  // Merge Supabase fields (a.score etc.) with localStorage cache — Supabase wins
   const lsData = (typeof caLoad === 'function') ? caLoad(cid).asgn || {} : {};
+
+  console.log(`[GH] course ${cid}: ${assigns.length} assignments in S, ls keys: [${Object.keys(lsData).join(',')}]`);
+  console.log('[GH] raw S.assignments for course:', assigns.map(a => ({ id: a.id, name: a.name, score: a.score, max_score: a.max_score, created_at: a.created_at })));
+
   const result = [];
 
   for (const a of assigns) {
     const ls = lsData[a.id] || lsData[String(a.id)] || {};
-    // Prefer Supabase score data; fall back to localStorage
     const score = a.score ?? ls.score;
-    if (score == null) continue;
-
     const max = a.max_score ?? ls.max ?? 100;
     const weight = a.weight ?? ls.weight ?? 1;
     const score_ts = a.score_ts ?? ls.score_ts;
     const tsSource = a.created_at || score_ts;
-    if (!tsSource) {
-      console.warn('[GradeHistory] skipped scored assignment without timestamp', a.id);
+
+    console.log(`[GH] id=${a.id} "${a.name}": sb_score=${a.score} ls_score=${ls.score} → resolved=${score} | ts="${tsSource}"`);
+
+    if (score == null) {
+      console.log(`  → DROPPED: no score`);
       continue;
     }
-    const tsValue = new Date(tsSource).getTime();
-    if (Number.isNaN(tsValue)) {
-      console.warn('[GradeHistory] skipped scored assignment with invalid timestamp', a.id, tsSource);
+    if (!tsSource) {
+      console.warn(`  → DROPPED: no timestamp`);
+      continue;
+    }
+    const tsMs = new Date(tsSource).getTime();
+    if (Number.isNaN(tsMs)) {
+      console.warn(`  → DROPPED: invalid timestamp "${tsSource}"`);
       continue;
     }
 
     const scoreF = parseFloat(score);
-    const maxF = parseFloat(max) || 100;
+    const maxF   = parseFloat(max) || 100;
     const weightF = parseFloat(weight) || 1;
     const pct = maxF > 0 ? scoreF / maxF * 100 : 0;
     const type = a.type ?? ls.type ?? 'assignment';
 
+    console.log(`  → INCLUDED pct=${pct.toFixed(1)}% ts=${new Date(tsMs).toISOString()}`);
+
     result.push({
-      id: a.id,
-      name: a.name,
-      score: scoreF,
-      max: maxF,
-      weight: weightF,
-      pct,
-      ts: tsSource,
-      loggedAt: score_ts || tsSource,
+      id: a.id, name: a.name,
+      score: scoreF, max: maxF, weight: weightF, pct,
+      ts: tsSource, loggedAt: score_ts || tsSource,
       isTest: type === 'test'
     });
   }
 
+  console.log(`[GH] course ${cid}: ${result.length}/${assigns.length} assignments plotted`);
   return result.sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
 }
 

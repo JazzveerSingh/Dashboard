@@ -113,6 +113,36 @@ function caHydrateFromSupabase() {
   });
 }
 
+// ── Push localStorage scores to Supabase for existing assignments ─
+// Runs once on login. If Supabase has no score for an assignment but
+// localStorage does, we write it now so the published site can see it.
+async function caSyncLocalScoresToSupabase() {
+  if (!window.S?.assignments?.length) return;
+  const updates = [];
+  S.assignments.forEach(a => {
+    if (a.score != null) return; // Supabase already has this score
+    const ls = caLoad(a.course_id).asgn?.[a.id] || caLoad(a.course_id).asgn?.[String(a.id)] || {};
+    if (ls.score == null) return; // No localStorage score either — nothing to push
+    const payload = {
+      score:     ls.score,
+      max_score: ls.max    ?? 100,
+      weight:    ls.weight ?? 1,
+      type:      ls.type   ?? 'assignment',
+      score_ts:  ls.score_ts || null
+    };
+    updates.push(
+      dbUpdate('assignments', a.id, payload).then(() => {
+        // Reflect in memory so ghBuildAssignData can use it immediately
+        Object.assign(a, payload);
+      })
+    );
+  });
+  if (updates.length) {
+    await Promise.all(updates);
+    console.log(`[ca] Synced ${updates.length} local score(s) to Supabase`);
+  }
+}
+
 // ── Type helpers (accessible from app.js) ─────────────────────
 function isDoneLogically(a, asgn) {
   return asgn[a.id]?.type === 'test' ? asgn[a.id]?.score != null : a.status === 'done';
