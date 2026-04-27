@@ -80,6 +80,28 @@ function caLoad(cid) {
 }
 function caSave(cid, data) { try { localStorage.setItem(CA_PRE + cid, JSON.stringify(data)); } catch {} }
 
+// ── Type helpers (accessible from app.js) ─────────────────────
+function isDoneLogically(a, asgn) {
+  return asgn[a.id]?.type === 'test' ? asgn[a.id]?.score != null : a.status === 'done';
+}
+function isAssignLogicallyDone(a) {
+  const d = caLoad(a.course_id);
+  return isDoneLogically(a, d.asgn || {});
+}
+function getAssignType(a) {
+  return caLoad(a.course_id).asgn[a.id]?.type || 'assignment';
+}
+
+// ── Type toggle in modal ───────────────────────────────────────
+let acAssignType = 'assignment';
+function acSetType(t) {
+  acAssignType = t;
+  const isTest = t === 'test';
+  $('at-asgn').style.cssText = `border:none;border-radius:0;padding:4px 12px;font-size:12px;font-weight:500;${!isTest?'background:var(--acc);color:#fff':''}`;
+  $('at-test').style.cssText = `border:none;border-radius:0;border-left:0.5px solid var(--bds);padding:4px 12px;font-size:12px;font-weight:500;${isTest?'background:var(--acc);color:#fff':''}`;
+  $('a-status-row').style.display = isTest ? 'none' : '';
+}
+
 function caSetTarget(cid, val) { const d = caLoad(cid); d.target = parseFloat(val) || 0; caSave(cid, d); caRefresh(cid); }
 
 function caSetScore(cid, aid, val) {
@@ -109,10 +131,10 @@ function caScoreBlur(cid) {
 
 function caCalc(cid, assigns) {
   const data = caLoad(cid), asgn = data.asgn || {}, target = data.target ?? 80;
-  const completed = assigns.filter(a => a.status === 'done').map(a => ({
+  const completed = assigns.filter(a => isDoneLogically(a, asgn)).map(a => ({
     score: asgn[a.id]?.score, max: asgn[a.id]?.max ?? 100
   }));
-  const remaining = assigns.filter(a => a.status !== 'done').map(a => ({
+  const remaining = assigns.filter(a => !isDoneLogically(a, asgn)).map(a => ({
     id: a.id, max: asgn[a.id]?.max ?? 100
   }));
   return gcCalcP({ completed, remaining, target });
@@ -120,7 +142,7 @@ function caCalc(cid, assigns) {
 
 function caEffGrade(cid, assigns) {
   const data = caLoad(cid), asgn = data.asgn || {};
-  const hasDoneWithScore = assigns.some(a => a.status === 'done' && asgn[a.id]?.score != null);
+  const hasDoneWithScore = assigns.some(a => isDoneLogically(a, asgn) && asgn[a.id]?.score != null);
   if (!hasDoneWithScore) return S.courses.find(c => c.id === cid)?.grade ?? null;
   return caCalc(cid, assigns).currentGrade;
 }
@@ -134,7 +156,7 @@ function caRefresh(cid) {
   if (proj) proj.innerHTML = caProjInner(res, data, assigns);
 
   const per = res.per || [];
-  assigns.filter(a => a.status !== 'done').forEach(a => {
+  assigns.filter(a => !isDoneLogically(a, asgn)).forEach(a => {
     const el = document.getElementById(`ca-need-${a.id}`); if (!el) return;
     const entry = per.find(p => p.id === a.id);
     if (!entry || entry.neededPct == null) { el.textContent = ''; return; }
@@ -143,7 +165,7 @@ function caRefresh(cid) {
     else { el.textContent = `→ ${entry.neededPct.toFixed(0)}%`; el.style.color = 'var(--tx2)'; }
   });
 
-  assigns.filter(a => a.status === 'done').forEach(a => {
+  assigns.forEach(a => {
     const pctEl = document.getElementById(`ca-pct-${a.id}`); if (!pctEl) return;
     const score = asgn[a.id]?.score, max = asgn[a.id]?.max ?? 100;
     if (score != null && max > 0) {
@@ -192,11 +214,18 @@ function sfToggleStatus(cid, s) {
 function sfToggleUnscored(cid) { const d = sfLoad(cid); d.unscoredOnly = !d.unscoredOnly; sfSave(cid, d); renderAcademics(); }
 function sfClear(cid) { sfSave(cid, { sort: sfLoad(cid).sort, statuses:[], unscoredOnly:false }); renderAcademics(); }
 
+function sfEffStatus(a, asgn) {
+  return asgn[a.id]?.type === 'test' ? (asgn[a.id]?.score != null ? 'done' : 'todo') : a.status;
+}
+
 function sfApply(assigns, cid, asgn) {
   const d = sfLoad(cid);
   let r = [...assigns];
-  if (d.statuses.length > 0) r = r.filter(a => d.statuses.includes(a.status));
-  if (d.unscoredOnly) r = r.filter(a => a.status === 'done' && asgn[a.id]?.score == null);
+  if (d.statuses.length > 0) r = r.filter(a => d.statuses.includes(sfEffStatus(a, asgn)));
+  if (d.unscoredOnly) r = r.filter(a => {
+    if (asgn[a.id]?.type === 'test') return asgn[a.id]?.score == null;
+    return a.status === 'done' && asgn[a.id]?.score == null;
+  });
   const so = { todo:0, ip:1, done:2 };
   switch (d.sort) {
     case 'due_asc':  r.sort((a,b) => (a.due_date||'9999') < (b.due_date||'9999') ? -1 : 1); break;
@@ -207,7 +236,7 @@ function sfApply(assigns, cid, asgn) {
       return pa - pb;
     }); break;
     case 'name': r.sort((a,b) => a.name.localeCompare(b.name)); break;
-    default: r.sort((a,b) => (so[a.status]??3) - (so[b.status]??3));
+    default: r.sort((a,b) => (so[sfEffStatus(a,asgn)]??3) - (so[sfEffStatus(b,asgn)]??3));
   }
   return r;
 }
@@ -305,6 +334,7 @@ function updateNotes(id, v) { debounceNotes(id, v); }
 
 // ── Assignment CRUD ────────────────────────────────────────────
 function openAssign(cid) {
+  acSetType('assignment');
   $('a-name').value = ''; $('a-date').value = ''; $('a-status').value = 'todo';
   $('a-score').value = ''; $('a-max').value = '';
   $('a-cid').value = cid; openM('m-assign');
@@ -313,22 +343,24 @@ function openAssign(cid) {
 async function saveAssign() {
   const name = $('a-name').value.trim(); if (!name) return;
   const cid = parseInt($('a-cid').value);
-  const row = await dbInsert('assignments', { course_id: cid, name, due_date: $('a-date').value || null, status: $('a-status').value });
+  const status = acAssignType === 'test' ? 'todo' : $('a-status').value;
+  const row = await dbInsert('assignments', { course_id: cid, name, due_date: $('a-date').value || null, status });
   if (row) {
     const sv = parseFloat($('a-score').value), mv = parseFloat($('a-max').value);
-    if (!isNaN(sv) || !isNaN(mv)) {
-      const d = caLoad(cid);
-      if (!d.asgn[row.id]) d.asgn[row.id] = {};
-      if (!isNaN(sv)) d.asgn[row.id].score = sv;
-      d.asgn[row.id].max = !isNaN(mv) ? mv : 100;
-      caSave(cid, d);
-    }
+    const d = caLoad(cid);
+    if (!d.asgn[row.id]) d.asgn[row.id] = {};
+    d.asgn[row.id].type = acAssignType;
+    if (!isNaN(sv)) d.asgn[row.id].score = sv;
+    if (!isNaN(mv)) d.asgn[row.id].max = mv;
+    caSave(cid, d);
     S.assignments.push(row); closeM('m-assign'); renderAcademics();
   }
 }
 
 async function cycleStatus(aid) {
   const a = S.assignments.find(a => a.id === aid); if (!a) return;
+  const d = caLoad(a.course_id);
+  if (d.asgn[aid]?.type === 'test') return;
   const order = ['todo','ip','done'];
   a.status = order[(order.indexOf(a.status)+1)%3];
   await dbUpdate('assignments', aid, { status: a.status });
@@ -347,14 +379,14 @@ function renderAcaMeta() {
   $('ac-avg').textContent = avg != null ? avg.toFixed(1)+'%' : '—';
   $('ac-bar').style.width = (avg??0)+'%';
   const sp = $('ac-spark'); if (sp) sp.innerHTML = ghGpaSpark();
-  const all = S.assignments, done = all.filter(a => a.status==='done').length;
+  const all = S.assignments, done = all.filter(a => isAssignLogicallyDone(a)).length;
   $('ac-done').textContent = `${done} / ${all.length}`;
   $('ac-sub').textContent = all.length ? Math.round(done/all.length*100)+'% complete' : '';
 }
 
 // ── Where marks are being lost ─────────────────────────────────
 function lostMarksHtml(assigns, asgn, target) {
-  const scored = assigns.filter(a => a.status==='done' && asgn[a.id]?.score != null);
+  const scored = assigns.filter(a => isDoneLogically(a, asgn) && asgn[a.id]?.score != null);
   if (scored.length < 2) return '';
   const sorted = [...scored].sort((a,b) => {
     const pa = asgn[a.id].score/(asgn[a.id]?.max||100), pb = asgn[b.id].score/(asgn[b.id]?.max||100);
@@ -390,12 +422,13 @@ function renderAcademics() {
     const sf = sfLoad(c.id), isFiltered = sf.statuses.length>0 || sf.unscoredOnly;
 
     const rows = visibleAssigns.map(a => {
-      const isDone = a.status==='done';
+      const isTestType = asgn[a.id]?.type === 'test';
+      const logicallyDone = isDoneLogically(a, asgn);
       const score = asgn[a.id]?.score, max = asgn[a.id]?.max??100;
-      const isOverdue = !isDone && a.due_date && a.due_date < today();
+      const isOverdue = !logicallyDone && a.due_date && a.due_date < today();
 
       let scoreCell;
-      if (isDone) {
+      if (logicallyDone || isTestType) {
         const pct = score!=null && max>0 ? score/max*100 : null;
         const col = pct!=null ? (pct>=target?'var(--green)':pct>=target*0.75?'var(--amber)':'var(--red)') : '';
         const scoreOver = score!=null && score>max;
@@ -408,7 +441,7 @@ function renderAcademics() {
             style="width:44px;text-align:center;font-size:12px;padding:3px 4px"
             oninput="caSetMax(${c.id},${a.id},this.value)"/>
           <span id="ca-pct-${a.id}" style="font-size:10px;font-weight:700;color:${col};min-width:28px${pct==null?';display:none':''}">${pct!=null?pct.toFixed(0)+'%':''}</span>
-          <span id="ca-sw-${a.id}" style="color:var(--amber);font-size:11px${score==null?'':';display:none'}" title="No score entered">⚠</span>
+          ${!isTestType ? `<span id="ca-sw-${a.id}" style="color:var(--amber);font-size:11px${score==null?'':';display:none'}" title="No score entered">⚠</span>` : ''}
         </div>`;
       } else {
         const pEntry = per.find(p => p.id===a.id);
@@ -421,17 +454,25 @@ function renderAcademics() {
         scoreCell = `<span id="ca-need-${a.id}" style="font-size:11px;color:${needColor};white-space:nowrap;font-weight:500">${needText}</span>`;
       }
 
+      const statusCell = isTestType
+        ? (score==null && a.due_date && a.due_date < today()
+            ? `<span style="font-size:11px;color:var(--amber);white-space:nowrap">Score not yet entered</span>`
+            : '')
+        : `<span class="badge ${sc(a.status)}" style="cursor:pointer;white-space:nowrap" onclick="cycleStatus(${a.id})" title="Click to cycle">${sl(a.status)}</span>`;
+
+      const typeChip = isTestType
+        ? `<span style="font-size:9px;font-weight:700;color:var(--tx2);background:var(--bg3);border-radius:3px;padding:1px 5px;flex-shrink:0;letter-spacing:.3px">TEST</span>`
+        : '';
+
       return `<tr style="border-bottom:0.5px solid var(--bd)">
         <td style="padding:5px 6px;font-size:13px">
           <div style="display:flex;align-items:center;gap:5px">
             <div style="width:4px;height:4px;border-radius:50%;background:${color};flex-shrink:0"></div>
-            <span${isOverdue?' style="color:var(--red)"':''}>${esc(a.name)}${isOverdue?' <span style="font-size:10px" title="Past due">⚠</span>':''}</span>
+            ${typeChip}<span${isOverdue?' style="color:var(--red)"':''}>${esc(a.name)}${isOverdue?' <span style="font-size:10px" title="Past due">⚠</span>':''}</span>
           </div>
         </td>
         <td style="padding:5px 6px">${scoreCell}</td>
-        <td style="padding:5px 6px;text-align:center">
-          <span class="badge ${sc(a.status)}" style="cursor:pointer;white-space:nowrap" onclick="cycleStatus(${a.id})" title="Click to cycle">${sl(a.status)}</span>
-        </td>
+        <td style="padding:5px 6px;text-align:center">${statusCell}</td>
         <td style="padding:5px 6px;font-size:11px;color:var(--tx2);white-space:nowrap">${fmt(a.due_date)}</td>
         <td style="padding:5px 6px;text-align:right"><button class="xb" onclick="delAssign(${a.id})">✕</button></td>
       </tr>`;

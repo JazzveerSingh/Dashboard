@@ -56,9 +56,10 @@
 <div class="mbg" id="m-assign">
   <div class="modal">
     <h3>Add assessment</h3>
-    <div class="mrow"><label>Name</label><input id="a-name" type="text" placeholder="Assignment name"/></div>
+    <div class="mrow"><label>Type</label><div style="display:flex;border:0.5px solid var(--bds);border-radius:var(--r);overflow:hidden;width:fit-content"><button id="at-asgn" onclick="acSetType('assignment')" style="border:none;border-radius:0;padding:4px 12px;font-size:12px;font-weight:500;background:var(--acc);color:#fff">Assignment</button><button id="at-test" onclick="acSetType('test')" style="border:none;border-radius:0;border-left:0.5px solid var(--bds);padding:4px 12px;font-size:12px;font-weight:500">Test</button></div></div>
+    <div class="mrow"><label>Name</label><input id="a-name" type="text" placeholder="Name"/></div>
     <div class="mrow"><label>Due date</label><input id="a-date" type="date"/></div>
-    <div class="mrow"><label>Status</label><select id="a-status"><option value="todo">To do</option><option value="ip">In progress</option><option value="done">Done</option></select></div>
+    <div class="mrow" id="a-status-row"><label>Status</label><select id="a-status"><option value="todo">To do</option><option value="ip">In progress</option><option value="done">Done</option></select></div>
     <div class="mrow"><label>Score earned</label><input id="a-score" type="number" min="0" placeholder="e.g. 73 (optional)"/></div>
     <div class="mrow"><label>Max points</label><input id="a-max" type="number" min="1" placeholder="e.g. 100 (optional)"/></div>
     <input type="hidden" id="a-cid"/>
