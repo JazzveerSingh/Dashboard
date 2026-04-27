@@ -1,35 +1,49 @@
 // ── Grade History ─────────────────────────────────────────────
-const GH_PRE = 'gh_';
 const ghOpen = new Set();
 const ghToggles = new Map(); // cid -> { showScores: bool, showAvg: bool }
 
-// ── Manual grade log (legacy support) ────────────────────────
-function ghKey(cid) { return GH_PRE + cid; }
-function ghLoad(cid) { try { return JSON.parse(localStorage.getItem(ghKey(cid))) || []; } catch { return []; } }
-function ghSave(cid, entries) { try { localStorage.setItem(ghKey(cid), JSON.stringify(entries)); } catch {} }
-function ghSorted(cid) {
-  return ghLoad(cid).sort((a, b) => (a.ts || a.date).localeCompare(b.ts || b.date));
-}
-
 // ── Assignment-based data ─────────────────────────────────────
 function ghBuildAssignData(cid) {
-  const assigns = (window.S?.assignments || []).filter(a => a.course_id === cid);
-  const asgn = (typeof caLoad === 'function') ? (caLoad(cid).asgn || {}) : {};
+  const assigns = (window.S?.assignments || []).filter(a => String(a.course_id) === String(cid));
+  const asgnData = (typeof caLoad === 'function') ? caLoad(cid).asgn || {} : {};
   const result = [];
+
   for (const a of assigns) {
-    const d = asgn[a.id] || {};
+    const d = asgnData[a.id] || asgnData[String(a.id)] || {};
     if (d.score == null) continue;
-    const ts = a.created_at || d.score_ts || null;
-    if (!ts) continue;
+
+    const tsSource = a.created_at || d.score_ts;
+    if (!tsSource) {
+      console.warn('[GradeHistory] skipped scored assignment without timestamp', a, d);
+      continue;
+    }
+    const tsValue = new Date(tsSource).getTime();
+    if (Number.isNaN(tsValue)) {
+      console.warn('[GradeHistory] skipped scored assignment with invalid timestamp', a.id, tsSource);
+      continue;
+    }
+
+    const score = parseFloat(d.score);
+    const max = d.max != null ? parseFloat(d.max) : 100;
+    const weight = d.weight != null ? parseFloat(d.weight) : 1;
+    const pct = max > 0 ? score / max * 100 : 0;
+
     result.push({
-      id: a.id, name: a.name,
-      score: d.score, max: d.max ?? 100, weight: d.weight ?? 1,
-      pct: d.score / (d.max ?? 100) * 100,
-      ts, loggedAt: a.created_at || d.score_ts,
+      id: a.id,
+      name: a.name,
+      score,
+      max: max || 100,
+      weight: weight || 1,
+      pct,
+      ts: tsSource,
+      loggedAt: tsSource,
       isTest: d.type === 'test'
     });
   }
-  return result.sort((a, b) => a.ts.localeCompare(b.ts));
+
+  const sorted = result.sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
+  console.debug('[GradeHistory] buildAssignData', cid, sorted);
+  return sorted;
 }
 
 function ghBuildTrend(assignData) {
@@ -114,7 +128,6 @@ function ghSparkline(entries, w, h) {
 }
 
 function ghInlineSpark(cid) {
-  // Prefer assignment trend data
   const assignData = ghBuildAssignData(cid);
   if (assignData.length >= 2) {
     const trend = ghBuildTrend(assignData);
@@ -124,11 +137,7 @@ function ghInlineSpark(cid) {
       return ghSparkline(te, 54, 18) + `<span style="font-size:11px;color:${ghColor(tr)};margin-left:3px">${ghArrow(tr)}</span>`;
     }
   }
-  // Fall back to manual log
-  const entries = ghSorted(cid);
-  if (entries.length < 2) return '';
-  const tr = ghTrend(entries);
-  return ghSparkline(entries, 54, 18) + `<span style="font-size:11px;color:${ghColor(tr)};margin-left:3px">${ghArrow(tr)}</span>`;
+  return '';
 }
 
 // ── Dual-layer chart ──────────────────────────────────────────
@@ -136,37 +145,30 @@ function ghChartDual(cid, courseColor) {
   const assignData = ghBuildAssignData(cid);
   const trendData = ghBuildTrend(assignData);
   const toggle = ghGetToggle(cid);
+  console.debug('[GradeHistory] renderChart', cid, { assignData, trendData, toggle });
 
-  if (assignData.length === 0) return `<div style="text-align:center;padding:20px 0;font-size:12px;color:var(--tx3)">Score assignments to see the chart.</div>`;
+  if (assignData.length === 0) return `<div style="width:100%;height:100px;display:flex;align-items:center;justify-content:center;color:var(--tx3);font-size:12px;background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);">No scored assignments yet. Scores you log will appear here.</div>`;
 
-  const allPcts = assignData.map(a => a.pct);
-  const trendAvgs = trendData.filter(t => t.avg != null).map(t => t.avg);
-  const allVals = [...allPcts, ...trendAvgs];
-  const lo = Math.max(0, Math.min(...allVals) - 5), hi = Math.min(100, Math.max(...allVals) + 5), range = hi - lo || 1;
-
-  const W = 400, H = 100, pl = 26, pr = 4, pt = 8, pb = 20, iW = W - pl - pr, iH = H - pt - pb;
+  const W = 400, H = 100, pl = 28, pr = 4, pt = 10, pb = 20, iW = W - pl - pr, iH = H - pt - pb;
   const times = assignData.map(a => new Date(a.ts).getTime());
-  const tMin = Math.min(...times), tMax = Math.max(...times), tRange = tMax - tMin || 1;
+  const tMin = Math.min(...times), tMax = Math.max(...times);
+  const tRange = Math.max(1, tMax - tMin);
   const toX = t => pl + ((new Date(t).getTime() - tMin) / tRange) * iW;
-  const toY = v => pt + (1 - (v - lo) / range) * iH;
+  const toY = v => pt + (1 - Math.max(0, Math.min(v, 100)) / 100) * iH;
 
-  // Y axis
-  const yTicks = [lo, (lo + hi) / 2, hi];
-  const yAxis = yTicks.map(v => {
+  const yAxis = [0, 50, 100].map(v => {
     const y = toY(v);
     return `<line x1="${pl}" y1="${y.toFixed(1)}" x2="${pl + iW}" y2="${y.toFixed(1)}" stroke="var(--bd)" stroke-width="0.5"/>` +
-      `<text x="${pl - 3}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="7" fill="var(--tx3)">${v.toFixed(0)}</text>`;
+      `<text x="${pl - 4}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="7" fill="var(--tx3)">${v}</text>`;
   }).join('');
 
-  // Trend line (drawn first so dots sit on top)
   let trendSvg = '';
-  if (toggle.showAvg && trendData.length >= 2) {
-    const pts = trendData.filter(t => t.avg != null)
-      .map(t => `${toX(t.ts).toFixed(1)},${toY(t.avg).toFixed(1)}`).join(' ');
+  const trendPts = trendData.filter(t => t.avg != null);
+  if (toggle.showAvg && trendPts.length >= 2) {
+    const pts = trendPts.map(t => `${toX(t.ts).toFixed(1)},${toY(t.avg).toFixed(1)}`).join(' ');
     trendSvg = `<polyline points="${pts}" fill="none" stroke="${TREND_COL}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
   }
 
-  // Individual score points (circles = assignments, diamonds = tests)
   let dotsSvg = '';
   if (toggle.showScores) {
     dotsSvg = assignData.map(a => {
@@ -191,60 +193,13 @@ function ghChartDual(cid, courseColor) {
 // ── Mutations ─────────────────────────────────────────────────
 function ghToggle(cid) { ghOpen.has(cid) ? ghOpen.delete(cid) : ghOpen.add(cid); renderAcademics(); }
 
-function ghAppend(cid, val, opts = {}) {
-  const g = parseFloat(val);
-  if (isNaN(g) || g < 0 || g > 100) return;
-  const entries = ghLoad(cid);
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const now = new Date().toISOString();
-  const idx = entries.findIndex(e => e.date === todayStr);
-  if (idx >= 0) {
-    if (entries[idx].grade === g && !opts.updated) return;
-    entries[idx].grade = g; entries[idx].updated_at = now;
-    if (!entries[idx].ts) entries[idx].ts = now;
-  } else {
-    entries.push({ date: todayStr, grade: g, ts: now });
-  }
-  ghSave(cid, entries);
-  const sp = document.getElementById(`gh-sp-${cid}`);
-  if (sp) sp.innerHTML = ghInlineSpark(cid);
-  const meta = document.getElementById('ac-spark');
-  if (meta) meta.innerHTML = ghGpaSpark();
-}
-
-function ghAddEntry(cid) {
-  const dEl = document.getElementById(`gh-d-${cid}`), gEl = document.getElementById(`gh-g-${cid}`);
-  if (!dEl || !gEl) return;
-  const date = dEl.value, g = parseFloat(gEl.value);
-  if (!date || isNaN(g)) return;
-  const entries = ghLoad(cid);
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const now = new Date().toISOString();
-  const idx = entries.findIndex(e => e.date === date);
-  const isBackfill = date < todayStr;
-  if (idx >= 0) {
-    entries[idx].grade = g;
-    if (!entries[idx].ts) entries[idx].ts = now;
-    if (isBackfill) entries[idx].backfill = true;
-  } else {
-    const e = { date, grade: g, ts: now }; if (isBackfill) e.backfill = true; entries.push(e);
-  }
-  ghSave(cid, entries); dEl.value = ''; gEl.value = '';
-  renderAcademics();
-}
-
-function ghDeleteEntry(cid, date) {
-  ghSave(cid, ghLoad(cid).filter(e => e.date !== date));
-  renderAcademics();
-}
-
 // ── History HTML ──────────────────────────────────────────────
 function ghHistoryHtml(c) {
-  const cid = c.id, isOpen = ghOpen.has(cid);
+  const cid = c.id;
   const courseColor = getCourseColor(cid);
   const assignData = ghBuildAssignData(cid);
-  const manualEntries = ghSorted(cid);
   const toggle = ghGetToggle(cid);
+  const isOpen = ghOpen.has(cid);
 
   const toggle$header = `<div style="display:flex;align-items:center;gap:6px;margin-top:10px;cursor:pointer;user-select:none" onclick="ghToggle(${cid})">
     <span style="font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;font-weight:600">Grade History</span>
@@ -254,59 +209,11 @@ function ghHistoryHtml(c) {
 
   if (!isOpen) return toggle$header;
 
-  // Layer toggle buttons
-  const pill = (active, bg, label, icon) =>
-    `<button onclick="ghToggleLayer(${cid},'${active === toggle.showScores ? 'showScores' : 'showAvg'}')" ` +
-    `style="font-size:11px;padding:3px 10px;border-radius:100px;border:1px solid ${toggle[active === toggle.showScores ? 'showScores' : 'showAvg'] ? bg : 'var(--bd)'};` +
-    `background:${toggle[active === toggle.showScores ? 'showScores' : 'showAvg'] ? bg : 'transparent'};` +
-    `color:${toggle[active === toggle.showScores ? 'showScores' : 'showAvg'] ? '#fff' : 'var(--tx2)'};cursor:pointer;display:inline-flex;align-items:center;gap:5px">${icon} ${label}</button>`;
-
-  const scBtn = `<button onclick="ghToggleLayer(${cid},'showScores')"
-    style="font-size:11px;padding:3px 10px;border-radius:100px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;
-    border:1px solid ${toggle.showScores ? courseColor : 'var(--bd)'};
-    background:${toggle.showScores ? courseColor : 'transparent'};
-    color:${toggle.showScores ? '#fff' : 'var(--tx2)'}">
-    <svg width="9" height="9" style="flex-shrink:0"><circle cx="4.5" cy="4.5" r="4.5" fill="${toggle.showScores ? '#fff' : courseColor}"/></svg>Scores
-  </button>`;
-  const avBtn = `<button onclick="ghToggleLayer(${cid},'showAvg')"
-    style="font-size:11px;padding:3px 10px;border-radius:100px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;
-    border:1px solid ${toggle.showAvg ? TREND_COL : 'var(--bd)'};
-    background:${toggle.showAvg ? TREND_COL : 'transparent'};
-    color:${toggle.showAvg ? '#fff' : 'var(--tx2)'}">
-    <svg width="14" height="3" style="flex-shrink:0"><line x1="0" y1="1.5" x2="14" y2="1.5" stroke="${toggle.showAvg ? '#fff' : TREND_COL}" stroke-width="2.5" stroke-linecap="round"/></svg>Average
-  </button>`;
+  const scBtn = `<button onclick="ghToggleLayer(${cid},'showScores')" style="font-size:11px;padding:3px 10px;border-radius:100px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;border:1px solid ${toggle.showScores ? courseColor : 'var(--bd)'};background:${toggle.showScores ? courseColor : 'transparent'};color:${toggle.showScores ? '#fff' : 'var(--tx2)'}"><svg width="9" height="9" style="flex-shrink:0"><circle cx="4.5" cy="4.5" r="4.5" fill="${toggle.showScores ? '#fff' : courseColor}"/></svg>Scores</button>`;
+  const avBtn = `<button onclick="ghToggleLayer(${cid},'showAvg')" style="font-size:11px;padding:3px 10px;border-radius:100px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;border:1px solid ${toggle.showAvg ? TREND_COL : 'var(--bd)'};background:${toggle.showAvg ? TREND_COL : 'transparent'};color:${toggle.showAvg ? '#fff' : 'var(--tx2)'}"><svg width="14" height="3" style="flex-shrink:0"><line x1="0" y1="1.5" x2="14" y2="1.5" stroke="${toggle.showAvg ? '#fff' : TREND_COL}" stroke-width="2.5" stroke-linecap="round"/></svg>Average</button>`;
   const toggleBtns = `<div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">${scBtn}${avBtn}</div>`;
 
-  // Chart
-  const chartHtml = assignData.length > 0
-    ? toggleBtns + ghChartDual(cid, courseColor)
-    : `<div style="text-align:center;padding:20px 0;font-size:12px;color:var(--tx3)">Score assignments to see the chart.</div>`;
-
-  // Manual grade log (collapsible, collapsed by default if there are scored assignments)
-  const fmtD = d => new Date(d + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const manualList = manualEntries.map(e => {
-    const edited = e.updated_at ? `<span style="font-size:10px;color:var(--tx3)" title="Edited ${fmtD(e.updated_at.slice(0,10))}">✎</span>` : '';
-    const bf = e.backfill ? `<span style="font-size:9px;color:var(--tx3);border:0.5px solid var(--bd);border-radius:3px;padding:0 3px">backfill</span>` : '';
-    return `<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:0.5px solid var(--bd);font-size:12px">
-      <span style="flex:1;color:var(--tx2)">${fmtD(e.date)}</span>${bf}${edited}
-      <span style="font-weight:600">${e.grade}%</span>
-      <button class="xb" onclick="ghDeleteEntry(${cid},'${e.date}')">✕</button>
-    </div>`;
-  }).join('');
-  const form = `<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center">
-    <input type="date" id="gh-d-${cid}" max="${todayStr}" style="flex:1;min-width:120px;font-size:12px;padding:5px 8px"/>
-    <input type="number" id="gh-g-${cid}" min="0" max="100" placeholder="Grade %" style="width:80px;font-size:12px;padding:5px 8px;text-align:center"/>
-    <button onclick="ghAddEntry(${cid})" style="font-size:12px;padding:5px 10px">+ Log</button>
-  </div>`;
-  const manualSection = `<details style="margin-top:10px"${assignData.length === 0 ? ' open' : ''}>
-    <summary style="font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;font-weight:600;cursor:pointer;list-style:none;display:flex;align-items:center;gap:5px">
-      Manual grade log<span style="color:var(--tx3)">(${manualEntries.length})</span>
-    </summary>
-    <div style="margin-top:6px">${manualList || '<div style="font-size:12px;color:var(--tx3);padding:6px 0">No entries yet.</div>'}</div>${form}
-  </details>`;
-
-  return `${toggle$header}<div style="margin-top:8px">${chartHtml}</div>${manualSection}`;
+  return `${toggle$header}<div style="margin-top:8px">${toggleBtns}${ghChartDual(cid, courseColor)}</div>`;
 }
 
 // ── Overall GPA sparkline ─────────────────────────────────────
@@ -328,13 +235,5 @@ function ghGpaSpark() {
     });
     if (series.length >= 2) return ghSparkline(series, 60, 20);
   }
-  // Fall back to manual grade history
-  const histMap = {}, allDates = new Set();
-  S.courses.forEach(c => { histMap[c.id] = ghSorted(c.id); histMap[c.id].forEach(e => allDates.add(e.date)); });
-  if (allDates.size < 2) return '';
-  const manualSeries = [...allDates].sort().map(date => {
-    const grades = S.courses.map(c => { const h = histMap[c.id].filter(e => e.date <= date); return h.length ? h[h.length-1].grade : null; }).filter(g => g != null);
-    return grades.length ? { date, grade: grades.reduce((a, b) => a + b, 0) / grades.length } : null;
-  }).filter(Boolean);
-  return manualSeries.length >= 2 ? ghSparkline(manualSeries, 60, 20) : '';
+  return '';
 }

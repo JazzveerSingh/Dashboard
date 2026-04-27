@@ -136,9 +136,6 @@ async function caEditSave(aid) {
   if (!isNaN(weightVal) && weightVal > 0) d.asgn[aid].weight = weightVal; else delete d.asgn[aid].weight;
   if (typeVal) d.asgn[aid].type = typeVal;
   caSave(cid, d);
-  const assigns = S.assignments.filter(a => a.course_id === cid);
-  const g = caEffGrade(cid, assigns);
-  if (g != null) ghAppend(cid, g, { updated: true });
   acEditId = null; acEditOrigAsgn = null;
   renderAcademics(); renderHome();
   setTimeout(() => {
@@ -198,9 +195,7 @@ function caSetMax(cid, aid, val) {
 }
 
 function caScoreBlur(cid) {
-  const assigns = S.assignments.filter(a => a.course_id === cid);
-  const g = caEffGrade(cid, assigns);
-  if (g != null) { ghAppend(cid, g); renderAcaMeta(); }
+  renderAcaMeta();
 }
 
 function caCalc(cid, assigns) {
@@ -636,10 +631,10 @@ function renderAcademics() {
           <span style="display:inline-flex;align-items:center;gap:2px;flex-shrink:0" id="gh-sp-${c.id}">${ghInlineSpark(c.id)}</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px">
-          <span style="font-size:10px;color:var(--tx2)">Manual</span>
+          <span style="font-size:10px;color:var(--tx2)">Grade</span>
           <input type="number" min="0" max="100" value="${c.grade??''}" placeholder="—"
             style="width:52px;text-align:center;font-weight:600;font-size:13px"
-            oninput="updateGrade(${c.id},this.value)" onblur="ghAppend(${c.id},this.value)"/>
+            oninput="updateGrade(${c.id},this.value)"/>
           <span style="font-size:11px;color:var(--tx2)">%</span>
           <button class="xb" onclick="deleteCourse(${c.id})">✕</button>
         </div>
