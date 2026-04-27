@@ -120,6 +120,8 @@ button:active { transform:scale(.98); }
 .bp:hover { background:var(--acch); border-color:var(--acch); color:#fff; }
 .xb { padding:2px 6px!important; font-size:11px!important; border-radius:5px!important; color:var(--tx3)!important; border-color:transparent!important; background:transparent!important; }
 .xb:hover { background:var(--fred)!important; color:var(--red)!important; }
+.eb { padding:2px 6px!important; font-size:12px!important; border-radius:5px!important; color:var(--tx3)!important; border-color:transparent!important; background:transparent!important; }
+.eb:hover { background:var(--acc3)!important; color:var(--acc)!important; }
 
 /* ── INPUTS ── */
 input, select, textarea { font-family:var(--f); font-size:13px; padding:8px 10px; border:0.5px solid var(--bds); border-radius:var(--r); background:var(--bg2); color:var(--tx); outline:none; transition:border .15s, box-shadow .15s; }

@@ -36,12 +36,12 @@
 </div>
 <div class="mbg" id="m-task">
   <div class="modal">
-    <h3>Add task</h3>
+    <h3 id="m-task-h">Add task</h3>
     <div class="mrow"><label>Name</label><input id="t-name" type="text" placeholder="What needs doing?"/></div>
     <div class="mrow"><label>Priority</label><select id="t-pri"><option>High</option><option selected>Med</option><option>Low</option></select></div>
-    <div class="mrow"><label>Tag</label><select id="t-tag"><option>personal</option><option>academics</option><option>errands</option><option>uni prep</option><option>music</option></select></div>
+    <div class="mrow"><label>Tag</label><select id="t-tag"></select></div>
     <div class="mrow"><label>Due date</label><input id="t-date" type="date"/></div>
-    <div class="mbtns"><button onclick="closeM('m-task')">Cancel</button><button class="bp" onclick="saveTask()">Add task</button></div>
+    <div class="mbtns"><button onclick="closeM('m-task')">Cancel</button><button class="bp" id="t-save" onclick="saveTask()">Add task</button></div>
   </div>
 </div>
 <div class="mbg" id="m-course">
@@ -64,6 +64,17 @@
     <div class="mrow"><label>Max points</label><input id="a-max" type="number" min="1" placeholder="e.g. 100 (optional)"/></div>
     <input type="hidden" id="a-cid"/>
     <div class="mbtns"><button onclick="closeM('m-assign')">Cancel</button><button class="bp" onclick="saveAssign()">Add</button></div>
+  </div>
+</div>
+<div class="mbg" id="m-tagmgr">
+  <div class="modal">
+    <h3>Manage tags</h3>
+    <div id="tagmgr-list" style="margin-bottom:12px;max-height:280px;overflow-y:auto"></div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <input id="tagmgr-new" type="text" placeholder="New tag name…" style="flex:1" onkeydown="if(event.key==='Enter')addNewTag()"/>
+      <button class="bp" onclick="addNewTag()">Add</button>
+    </div>
+    <div class="mbtns"><button onclick="closeM('m-tagmgr')">Done</button></div>
   </div>
 </div>
 <div class="mbg" id="m-saving">
@@ -144,13 +155,14 @@
         <div class="quick-add">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--tx3);flex-shrink:0"><circle cx="8" cy="8" r="6"/><path d="M8 5v6M5 8h6"/></svg>
           <input id="qa-input" placeholder="Quick add task… (press Enter)" type="text"/>
+          <span id="qa-preview" style="font-size:11px;color:var(--acc);flex-shrink:0;display:none"></span>
           <span class="quick-add-hint">Enter to add</span>
         </div>
         <div class="g4">
           <div class="mc"><div class="ml">Due this week</div><div class="mv" id="hm-due">0</div></div>
-          <div class="mc"><div class="ml">Monthly income</div><div class="mv inc" id="hm-inc">$0</div></div>
-          <div class="mc"><div class="ml">Budget left</div><div class="mv" id="hm-rem">$0</div></div>
           <div class="mc"><div class="ml">Average</div><div class="mv" id="hm-avg">—</div></div>
+          <div class="mc"><div class="ml">Budget left</div><div class="mv" id="hm-rem">$0</div></div>
+          <div class="mc"><div class="ml">Monthly income</div><div class="mv inc" id="hm-inc">$0</div></div>
         </div>
         <div class="g2">
           <div class="card"><div class="st">Upcoming deadlines</div><div id="hm-dl"></div></div>
@@ -183,21 +195,22 @@
 
     <!-- TASKS -->
     <div class="sec" id="sec-tasks">
-      <div class="hdr"><div class="hdr-l"><h1>Tasks</h1><p id="task-lbl">—</p></div><button class="bp" onclick="openM('m-task')">+ Add task</button></div>
+      <div class="hdr"><div class="hdr-l"><h1>Tasks</h1><p id="task-lbl">—</p></div><button class="bp" onclick="openAddTask()">+ Add task</button></div>
       <div class="content">
         <div class="search-bar">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="4"/><path d="M10 10l3 3"/></svg>
           <input id="task-search" placeholder="Search tasks…" oninput="renderTasks()"/>
         </div>
-        <div class="tstrip">
-          <div class="tpill on" onclick="setTF('',this)">All</div>
-          <div class="tpill" onclick="setTF('personal',this)">Personal</div>
-          <div class="tpill" onclick="setTF('academics',this)">Academics</div>
-          <div class="tpill" onclick="setTF('errands',this)">Errands</div>
-          <div class="tpill" onclick="setTF('uni prep',this)">Uni prep</div>
-          <div class="tpill" onclick="setTF('music',this)">Music</div>
-        </div>
+        <div class="tstrip" id="tstrip"></div>
+        <button id="task-clear-btn" onclick="clearCompleted()" style="font-size:12px;padding:5px 12px;margin-bottom:10px;display:none;color:var(--tx2)">✓ Clear completed</button>
         <div class="card"><div id="task-list"></div></div>
+        <div class="card" id="archive-sec" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleArchive()">
+            <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Archive<span id="archive-count" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--tx2)"></span></span>
+            <span id="archive-chev" style="font-size:12px;color:var(--tx2)">▼</span>
+          </div>
+          <div id="archive-list" style="display:none;margin-top:8px"></div>
+        </div>
       </div>
     </div>
 

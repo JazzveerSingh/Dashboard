@@ -39,7 +39,7 @@ function initKeyboard() {
     if (e.key === 'Escape') { document.querySelectorAll('.mbg.open').forEach(m => m.classList.remove('open')); return; }
     const tag = document.activeElement.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-    if (e.key === 'n' || e.key === 'N') { e.preventDefault(); openM('m-task'); setTimeout(() => $('t-name').focus(), 50); }
+    if (e.key === 'n' || e.key === 'N') { e.preventDefault(); openAddTask(); }
     if (e.key === 'h' || e.key === 'H') { e.preventDefault(); openHabitModal(); }
     if (e.key === '/') { e.preventDefault(); goTab('tasks'); setTimeout(() => $('task-search').focus(), 50); }
     if (e.key === '1') goTab('home');
@@ -50,13 +50,76 @@ function initKeyboard() {
   });
 }
 
+// ── Natural-language date parser ──────────────────────────────
+function parseNLDate(s) {
+  const lower = s.toLowerCase().trim();
+  const now = new Date(); now.setHours(0,0,0,0);
+  const iso = d => new Date(d.getTime() + 12*3600000).toISOString().slice(0,10);
+
+  if (lower === 'today') return iso(now);
+  if (lower === 'tomorrow' || lower === 'tmr') { const d = new Date(now); d.setDate(d.getDate()+1); return iso(d); }
+
+  const DAYS  = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  const DSHRT = ['sun','mon','tue','wed','thu','fri','sat'];
+  let addWk = false;
+  const clean = lower.replace(/^next\s+/, () => { addWk = true; return ''; });
+  let di = DAYS.indexOf(clean); if (di < 0) di = DSHRT.indexOf(clean);
+  if (di >= 0) {
+    let diff = (di - now.getDay() + 7) % 7;
+    if (diff === 0 || addWk) diff += 7;
+    const d = new Date(now); d.setDate(d.getDate() + diff); return iso(d);
+  }
+
+  const MSHRT = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  const MFULL = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+  const mm = lower.match(/^(\w+)\s+(\d{1,2})$/);
+  if (mm) {
+    let mi = MSHRT.indexOf(mm[1]); if (mi < 0) mi = MFULL.indexOf(mm[1]);
+    if (mi >= 0) {
+      const d = new Date(now.getFullYear(), mi, parseInt(mm[2]));
+      if (d < now) d.setFullYear(d.getFullYear() + 1); return iso(d);
+    }
+  }
+
+  const sm = lower.match(/^(\d{1,2})\/(\d{1,2})$/);
+  if (sm) {
+    const d = new Date(now.getFullYear(), parseInt(sm[1])-1, parseInt(sm[2]));
+    if (d < now) d.setFullYear(d.getFullYear() + 1); return iso(d);
+  }
+
+  return null;
+}
+
 // ── Quick add ─────────────────────────────────────────────────
 function initQA() {
-  $('qa-input').addEventListener('keydown', async e => {
+  const inp = $('qa-input'), prev = $('qa-preview');
+
+  function parseQA(raw) {
+    const toks = raw.trim().split(/\s+/);
+    for (let n = 2; n >= 1; n--) {
+      if (toks.length > n) {
+        const d = parseNLDate(toks.slice(-n).join(' '));
+        if (d) return { name: toks.slice(0, -n).join(' '), date: d };
+      }
+    }
+    return { name: raw.trim(), date: null };
+  }
+
+  inp.addEventListener('input', () => {
+    const { date } = parseQA(inp.value);
+    if (prev) { prev.textContent = date ? `📅 ${fmt(date)}` : ''; prev.style.display = date ? '' : 'none'; }
+  });
+
+  inp.addEventListener('keydown', async e => {
     if (e.key !== 'Enter') return;
-    const name = $('qa-input').value.trim(); if (!name) return;
-    const row = await dbInsert('tasks', { name, priority:'Med', tag:'personal', due_date:today(), done:false });
-    if (row) { S.tasks.unshift(row); $('qa-input').value = ''; renderTasks(); renderHome(); }
+    const raw = inp.value.trim(); if (!raw) return;
+    const { name, date } = parseQA(raw); if (!name) return;
+    const row = await dbInsert('tasks', { name, priority:'Med', tag:'personal', due_date: date, done:false });
+    if (row) {
+      S.tasks.unshift(row); inp.value = '';
+      if (prev) { prev.textContent = ''; prev.style.display = 'none'; }
+      renderTasks(); renderHome();
+    }
   });
 }
 
