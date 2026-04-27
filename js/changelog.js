@@ -1,5 +1,31 @@
 const CHANGELOG = [
   {
+    version: '1.6',
+    date: 'Apr 2025',
+    changes: {
+      New: [
+        'Budget limits per category — set a monthly cap and warning threshold in ⚙ Categories',
+        'Budget progress bars — colour-coded green/amber/red as you approach and exceed limits',
+        'Budget summary card — total budgeted, spent, and remaining across all capped categories',
+        'Spending trends — monthly history chart with 3m/6m/12m range and category filter',
+        'Month-over-month table — see last month vs this month with directional change indicators',
+        'Auto budget reset — budget resets automatically each month; past data archived in Trends',
+        'Custom transaction categories — add, rename, and delete categories from ⚙ Categories',
+        'Savings contribution log — track every deposit and withdrawal with date and note',
+        'Savings sparkline — balance growth chart inside each goal\'s history view',
+      ],
+      Improved: [
+        'Budget breakdown shows colour-coded category dots and inline budget warnings',
+        'Transaction list filtered to current month only; full history available in Spending trends',
+        'Home page Monthly income and Budget left tiles show current month only',
+        'Savings goal cards show contribution history inline with running balance',
+      ],
+      Fixed: [
+        'Savings goal balance now derived from contribution history, not a manually edited field',
+      ],
+    },
+  },
+  {
     version: '1.5',
     date: 'Apr 2025',
     changes: {
@@ -46,7 +72,7 @@ const CHANGELOG = [
   },
 ];
 
-const CL_VERSION = CHANGELOG[0].version;
+const CL_VERSION = '1.6';
 
 function clCheckOnLoad() {
   const seen = localStorage.getItem('cl_seen');

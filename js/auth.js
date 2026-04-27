@@ -38,12 +38,14 @@ async function onSignIn(user) {
   await ensureProfile();
   await loadAll();
   applyProfile();
+  initCats();
   initClock();
   fetchWx();
   renderAll();
   initKeyboard();
   initQA();
   clUpdateDot();
+  checkMonthReset();
   clCheckOnLoad();
 }
 

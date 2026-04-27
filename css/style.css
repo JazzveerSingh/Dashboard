@@ -152,15 +152,15 @@ input:focus, select:focus, textarea:focus { border-color:var(--acc); box-shadow:
 .sg:last-child { border-bottom:none; }
 .sg-h { display:flex; justify-content:space-between; align-items:center; font-size:13px; margin-bottom:6px; }
 
+/* ── MONEY TABS ── */
+.mtab { font-size:12px; padding:5px 12px; border:none; border-radius:calc(var(--r) - 2px); background:transparent; color:var(--tx2); font-weight:500; }
+.mtab.active { background:var(--bg2); color:var(--tx); box-shadow:var(--sh); }
+.mtab:hover:not(.active) { background:var(--bg4); }
+
 /* ── MONEY ── */
 .brow { display:flex; justify-content:space-between; padding:7px 0; border-bottom:0.5px solid var(--bd); font-size:13px; }
 .brow:last-child { border-bottom:none; }
 .inc { color:#2d8a60; font-weight:600; } .exp { color:#c04040; font-weight:600; }
-.cb2 { display:flex; align-items:center; gap:8px; padding:5px 0; font-size:13px; }
-.cbl { width:90px; color:var(--tx2); font-size:12px; flex-shrink:0; }
-.cbt { flex:1; height:5px; background:var(--bg3); border-radius:3px; overflow:hidden; }
-.cbf { height:5px; border-radius:3px; }
-.cba { width:42px; text-align:right; font-size:12px; font-weight:500; }
 .trow { display:flex; align-items:center; padding:7px 0; border-bottom:0.5px solid var(--bd); font-size:13px; gap:8px; }
 .trow:last-child { border-bottom:none; }
 .net-row { font-size:14px; font-weight:600; display:flex; justify-content:space-between; padding-top:10px; margin-top:2px; border-top:0.5px solid var(--bd); }

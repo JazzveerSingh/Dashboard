@@ -81,10 +81,36 @@
   <div class="modal">
     <h3 id="saving-modal-title">Add savings goal</h3>
     <div class="mrow"><label>Name</label><input id="s-name" type="text" placeholder="e.g. Laptop fund"/></div>
-    <div class="mrow"><label>Current ($)</label><input id="s-cur" type="number" min="0" placeholder="0"/></div>
     <div class="mrow"><label>Target ($)</label><input id="s-tgt" type="number" min="1" placeholder="500"/></div>
     <input type="hidden" id="s-id"/>
     <div class="mbtns"><button onclick="closeM('m-saving')">Cancel</button><button class="bp" id="s-save-btn" onclick="saveSaving()">Add goal</button></div>
+  </div>
+</div>
+<div class="mbg" id="m-catmgr">
+  <div class="modal" style="max-width:460px">
+    <h3>Manage categories</h3>
+    <div id="catmgr-list" style="margin-bottom:12px;max-height:360px;overflow-y:auto"></div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <input id="catmgr-new" type="text" placeholder="New category name…" style="flex:1" onkeydown="if(event.key==='Enter')addNewCat()"/>
+      <button class="bp" onclick="addNewCat()">Add</button>
+    </div>
+    <div class="mbtns"><button onclick="closeM('m-catmgr');renderMoney()">Done</button></div>
+  </div>
+</div>
+<div class="mbg" id="m-contrib">
+  <div class="modal">
+    <h3>Add contribution</h3>
+    <div class="mrow"><label>Type</label><select id="contrib-type"><option value="deposit">Deposit</option><option value="withdrawal">Withdrawal</option></select></div>
+    <div class="mrow"><label>Amount ($)</label><input id="contrib-amt" type="number" min="0.01" step="0.01" placeholder="0.00"/></div>
+    <div class="mrow"><label>Note (optional)</label><input id="contrib-note" type="text" placeholder="e.g. Birthday money"/></div>
+    <div class="mbtns"><button onclick="closeM('m-contrib')">Cancel</button><button class="bp" onclick="addContrib()">Add</button></div>
+  </div>
+</div>
+<div class="mbg" id="m-month-reset">
+  <div class="modal">
+    <h3>New month</h3>
+    <p style="font-size:13px;color:var(--tx2);margin-bottom:16px">Your budget has reset for the new month. Last month's spending is saved in Spending trends.</p>
+    <div class="mbtns"><button class="bp" onclick="closeM('m-month-reset')">Got it</button></div>
   </div>
 </div>
 <div class="mbg" id="m-habit">
@@ -97,12 +123,12 @@
 </div>
 
 <div class="mbg" id="m-changelog">
-  <div class="modal" style="max-width:480px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <h3 style="margin:0">What's New</h3>
+  <div class="modal" style="max-width:560px;width:min(560px,94vw)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <h3 style="margin:0;font-size:17px">What's New</h3>
       <button class="xb" onclick="closeChangelog()">✕</button>
     </div>
-    <div id="cl-body" style="max-height:420px;overflow-y:auto"></div>
+    <div id="cl-body" style="max-height:500px;overflow-y:auto;padding-right:4px"></div>
     <div class="mbtns"><button class="bp" onclick="closeChangelog()">Got it</button></div>
   </div>
 </div>
@@ -243,27 +269,69 @@
 
     <!-- MONEY -->
     <div class="sec" id="sec-money">
-      <div class="hdr"><div class="hdr-l"><h1>Money</h1><p>Budget and savings.</p></div><button class="bp" onclick="openSavingAdd()">+ Add goal</button></div>
+      <div class="hdr">
+        <div class="hdr-l"><h1>Money</h1><p>Budget and savings.</p></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button onclick="openCatMgr()" style="font-size:12px;padding:6px 12px">⚙ Categories</button>
+          <button class="bp" onclick="openSavingAdd()">+ Add goal</button>
+        </div>
+      </div>
       <div class="content">
-        <div id="budget-reset-bar"></div>
-        <div class="g3">
-          <div class="mc"><div class="ml">Income</div><div class="mv inc" id="mn-inc">$0</div></div>
-          <div class="mc"><div class="ml">Spent</div><div class="mv exp" id="mn-sp">$0</div></div>
-          <div class="mc"><div class="ml">Remaining</div><div class="mv" id="mn-rem">$0</div></div>
+        <div style="display:flex;background:var(--bg3);border-radius:var(--r);padding:3px;gap:1px;width:fit-content;margin-bottom:14px">
+          <button class="mtab active" data-tab="overview" onclick="moneyTab('overview')">Overview</button>
+          <button class="mtab" data-tab="trends" onclick="moneyTab('trends')">Spending trends</button>
         </div>
-        <div class="g2">
-          <div class="card"><div class="st">Budget breakdown</div><div id="budget-rows"></div><div class="net-row"><span>Net</span><span id="mn-net">$0</span></div></div>
-          <div class="card"><div class="st">Spending by category</div><div id="cat-bars"></div></div>
+
+        <!-- OVERVIEW -->
+        <div id="mt-overview">
+          <div class="card" id="budget-summary-card" style="display:none;padding:14px 16px;margin-bottom:14px"></div>
+          <div class="g3">
+            <div class="mc"><div class="ml">Income</div><div class="mv inc" id="mn-inc">$0</div></div>
+            <div class="mc"><div class="ml">Spent</div><div class="mv exp" id="mn-sp">$0</div></div>
+            <div class="mc"><div class="ml">Remaining</div><div class="mv" id="mn-rem">$0</div></div>
+          </div>
+          <div class="card">
+            <div class="st">Budget breakdown</div>
+            <div id="budget-rows"></div>
+            <div class="net-row"><span>Net</span><span id="mn-net">$0</span></div>
+          </div>
+          <div class="card"><div class="st">Savings goals</div><div id="savings-list"></div></div>
+          <div class="card">
+            <div class="st">Transactions — this month</div>
+            <div id="txn-list"></div>
+            <div class="ar">
+              <input type="text" id="txn-nm" placeholder="Description…"/>
+              <select id="txn-cat"></select>
+              <input type="number" id="txn-amt" placeholder="$" style="flex:0.4;min-width:65px"/>
+              <button class="bp" onclick="addTxn()">Add</button>
+            </div>
+          </div>
         </div>
-        <div class="card"><div class="st">Savings goals</div><div id="savings-list"></div></div>
-        <div class="card">
-          <div class="st">Transactions</div>
-          <div id="txn-list"></div>
-          <div class="ar">
-            <input type="text" id="txn-nm" placeholder="Description…"/>
-            <select id="txn-cat"><option>food</option><option>transport</option><option>gear &amp; tech</option><option>subscriptions</option><option>income</option><option>other</option></select>
-            <input type="number" id="txn-amt" placeholder="$" style="flex:0.4;min-width:65px"/>
-            <button class="bp" onclick="addTxn()">Add</button>
+
+        <!-- TRENDS -->
+        <div id="mt-trends" style="display:none">
+          <div class="card" style="margin-bottom:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+              <div id="trends-summary" style="font-size:13px;color:var(--tx2);font-style:italic;flex:1;min-width:0"></div>
+              <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+                <select id="trends-cat" onchange="trendsCatFilter=this.value;renderTrends()" style="font-size:12px;padding:3px 8px"></select>
+                <div style="display:flex;background:var(--bg3);border-radius:var(--r);padding:2px;gap:1px">
+                  <button class="mtab" data-range="3" onclick="setTrendsRange(3)">3m</button>
+                  <button class="mtab active" data-range="6" onclick="setTrendsRange(6)">6m</button>
+                  <button class="mtab" data-range="12" onclick="setTrendsRange(12)">12m</button>
+                </div>
+              </div>
+            </div>
+            <div id="trends-chart" style="min-height:160px"></div>
+          </div>
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <span class="st" style="margin:0">Month over month</span>
+              <label style="font-size:12px;color:var(--tx2);display:flex;align-items:center;gap:5px;cursor:pointer">
+                <input type="checkbox" id="mom-show-empty" onchange="renderTrends()"/> Show empty
+              </label>
+            </div>
+            <div id="mom-table"></div>
           </div>
         </div>
       </div>
