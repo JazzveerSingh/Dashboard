@@ -131,12 +131,14 @@ function caScoreBlur(cid) {
 
 function caCalc(cid, assigns) {
   const data = caLoad(cid), asgn = data.asgn || {}, target = data.target ?? 80;
-  const completed = assigns.filter(a => isDoneLogically(a, asgn)).map(a => ({
-    score: asgn[a.id]?.score, max: asgn[a.id]?.max ?? 100
-  }));
-  const remaining = assigns.filter(a => !isDoneLogically(a, asgn)).map(a => ({
-    id: a.id, max: asgn[a.id]?.max ?? 100
-  }));
+  const completed = assigns.filter(a => isDoneLogically(a, asgn)).map(a => {
+    const w = asgn[a.id]?.weight ?? 1;
+    return { score: asgn[a.id]?.score != null ? asgn[a.id].score * w : null, max: (asgn[a.id]?.max ?? 100) * w };
+  });
+  const remaining = assigns.filter(a => !isDoneLogically(a, asgn)).map(a => {
+    const w = asgn[a.id]?.weight ?? 1;
+    return { id: a.id, max: (asgn[a.id]?.max ?? 100) * w };
+  });
   return gcCalcP({ completed, remaining, target });
 }
 
@@ -336,7 +338,7 @@ function updateNotes(id, v) { debounceNotes(id, v); }
 function openAssign(cid) {
   acSetType('assignment');
   $('a-name').value = ''; $('a-date').value = ''; $('a-status').value = 'todo';
-  $('a-score').value = ''; $('a-max').value = '';
+  $('a-score').value = ''; $('a-max').value = ''; $('a-weight').value = '';
   $('a-cid').value = cid; openM('m-assign');
 }
 
@@ -346,12 +348,13 @@ async function saveAssign() {
   const status = acAssignType === 'test' ? 'todo' : $('a-status').value;
   const row = await dbInsert('assignments', { course_id: cid, name, due_date: $('a-date').value || null, status });
   if (row) {
-    const sv = parseFloat($('a-score').value), mv = parseFloat($('a-max').value);
+    const sv = parseFloat($('a-score').value), mv = parseFloat($('a-max').value), wv = parseFloat($('a-weight').value);
     const d = caLoad(cid);
     if (!d.asgn[row.id]) d.asgn[row.id] = {};
     d.asgn[row.id].type = acAssignType;
     if (!isNaN(sv)) d.asgn[row.id].score = sv;
     if (!isNaN(mv)) d.asgn[row.id].max = mv;
+    if (!isNaN(wv) && wv > 0) d.asgn[row.id].weight = wv;
     caSave(cid, d);
     S.assignments.push(row); closeM('m-assign'); renderAcademics();
   }
@@ -424,7 +427,7 @@ function renderAcademics() {
     const rows = visibleAssigns.map(a => {
       const isTestType = asgn[a.id]?.type === 'test';
       const logicallyDone = isDoneLogically(a, asgn);
-      const score = asgn[a.id]?.score, max = asgn[a.id]?.max??100;
+      const score = asgn[a.id]?.score, max = asgn[a.id]?.max??100, weight = asgn[a.id]?.weight??1;
       const isOverdue = !logicallyDone && a.due_date && a.due_date < today();
 
       let scoreCell;
@@ -463,12 +466,15 @@ function renderAcademics() {
       const typeChip = isTestType
         ? `<span style="font-size:9px;font-weight:700;color:var(--tx2);background:var(--bg3);border-radius:3px;padding:1px 5px;flex-shrink:0;letter-spacing:.3px">TEST</span>`
         : '';
+      const weightChip = weight !== 1
+        ? `<span style="font-size:9px;font-weight:600;color:var(--acc);background:var(--fpurple);border-radius:3px;padding:1px 5px;flex-shrink:0">×${weight}</span>`
+        : '';
 
       return `<tr style="border-bottom:0.5px solid var(--bd)">
         <td style="padding:5px 6px;font-size:13px">
           <div style="display:flex;align-items:center;gap:5px">
             <div style="width:4px;height:4px;border-radius:50%;background:${color};flex-shrink:0"></div>
-            ${typeChip}<span${isOverdue?' style="color:var(--red)"':''}>${esc(a.name)}${isOverdue?' <span style="font-size:10px" title="Past due">⚠</span>':''}</span>
+            ${typeChip}${weightChip}<span${isOverdue?' style="color:var(--red)"':''}>${esc(a.name)}${isOverdue?' <span style="font-size:10px" title="Past due">⚠</span>':''}</span>
           </div>
         </td>
         <td style="padding:5px 6px">${scoreCell}</td>
