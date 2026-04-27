@@ -130,7 +130,8 @@ async function caEditSave(aid) {
   a.name = nameVal; a.due_date = dateVal; a.status = newStatus;
   const d = caLoad(cid);
   if (!d.asgn[aid]) d.asgn[aid] = {};
-  if (!isNaN(scoreVal)) d.asgn[aid].score = scoreVal; else delete d.asgn[aid].score;
+  if (!isNaN(scoreVal)) { d.asgn[aid].score = scoreVal; if (!d.asgn[aid].score_ts) d.asgn[aid].score_ts = new Date().toISOString(); }
+  else { delete d.asgn[aid].score; delete d.asgn[aid].score_ts; }
   d.asgn[aid].max = (!isNaN(maxVal) && maxVal > 0) ? maxVal : 100;
   if (!isNaN(weightVal) && weightVal > 0) d.asgn[aid].weight = weightVal; else delete d.asgn[aid].weight;
   if (typeVal) d.asgn[aid].type = typeVal;
@@ -180,7 +181,8 @@ function caSetScore(cid, aid, val) {
   const d = caLoad(cid);
   if (!d.asgn[aid]) d.asgn[aid] = {};
   const n = parseFloat(val);
-  if (isNaN(n)) delete d.asgn[aid].score; else d.asgn[aid].score = n;
+  if (isNaN(n)) { delete d.asgn[aid].score; delete d.asgn[aid].score_ts; }
+  else { d.asgn[aid].score = n; if (!d.asgn[aid].score_ts) d.asgn[aid].score_ts = new Date().toISOString(); }
   caSave(cid, d);
   const max = d.asgn[aid]?.max ?? 100;
   const warnEl = document.getElementById(`ca-sw-${aid}`);
@@ -424,7 +426,7 @@ async function saveAssign() {
     const d = caLoad(cid);
     if (!d.asgn[row.id]) d.asgn[row.id] = {};
     d.asgn[row.id].type = acAssignType;
-    if (!isNaN(sv)) d.asgn[row.id].score = sv;
+    if (!isNaN(sv)) { d.asgn[row.id].score = sv; d.asgn[row.id].score_ts = new Date().toISOString(); }
     if (!isNaN(mv)) d.asgn[row.id].max = mv;
     if (!isNaN(wv) && wv > 0) d.asgn[row.id].weight = wv;
     caSave(cid, d);
