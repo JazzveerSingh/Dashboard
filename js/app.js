@@ -129,17 +129,24 @@ let pEm = '';
 function openProfile() {
   pEm = S.profile.avatar || '🎸';
   $('p-name').value = S.profile.name || '';
+  $('p-location').value = S.profile.location || '';
   $('p-emojis').innerHTML = PE.map(e => `<span class="ep${e === pEm ? ' on' : ''}" onclick="pickPE('${e}',this)">${e}</span>`).join('');
   openM('m-profile');
 }
 function pickPE(e, el) { pEm = e; $('p-emojis').querySelectorAll('.ep').forEach(x => x.classList.remove('on')); el.classList.add('on'); }
 async function saveProfile() {
   const name = $('p-name').value.trim(); if (!name) return;
-  S.profile = { name, avatar: pEm };
-  await db.from('profile').upsert({ user_id: S.userId, name, avatar: pEm }, { onConflict: 'user_id' });
+  const location = $('p-location').value.trim();
+  S.profile = { name, avatar: pEm, location };
+  await db.from('profile').upsert({ user_id: S.userId, name, avatar: pEm, location }, { onConflict: 'user_id' });
   applyProfile(); closeM('m-profile');
+  fetchWx();
 }
-function applyProfile() { $('sb-nm').textContent = S.profile.name || 'Jazz'; $('sb-av').textContent = S.profile.avatar || '🎸'; }
+function applyProfile() {
+  $('sb-nm').textContent = S.profile.name || 'Student';
+  $('sb-av').textContent = S.profile.avatar || '🎸';
+  document.title = S.profile.name ? S.profile.name + "'s Dashboard" : 'Student Dashboard';
+}
 
 // ── Home ──────────────────────────────────────────────────────
 function renderHome() {
@@ -165,12 +172,17 @@ function renderHome() {
   S.tasks.filter(tk => !tk.done && tk.due_date).forEach(tk => { const n = dfn(tk.due_date); if (n >= -1 && n <= 14) dl.push({ name: tk.name, date: tk.due_date, tag: tk.tag }); });
   S.assignments.filter(a => !isAssignLogicallyDone(a) && a.due_date).forEach(a => { const n = dfn(a.due_date); if (n >= -1 && n <= 14) dl.push({ name: a.name, date: a.due_date, tag: 'academics', cid: a.course_id, isTest: typeof getAssignType === 'function' && getAssignType(a) === 'test' }); });
   dl.sort((a, b) => a.date.localeCompare(b.date));
-  $('hm-dl').innerHTML = dl.length ? dl.slice(0, 6).map(d => {
+  const dlRow = d => {
     const n = dfn(d.date), dc = n <= 0 ? 'dr' : n <= 3 ? 'da' : 'dg';
     const cDot = d.cid && typeof getCourseColor === 'function' ? `<div style="width:7px;height:7px;border-radius:50%;background:${getCourseColor(d.cid)};flex-shrink:0"></div>` : '';
     const testLabel = d.isTest ? `<span style="font-size:9px;font-weight:700;background:var(--bg3);color:var(--tx2);border-radius:3px;padding:1px 5px;flex-shrink:0;letter-spacing:.3px">TEST</span>` : '';
     return `<div class="row"><div class="dot ${dc}"></div>${cDot}${testLabel}<span style="flex:1">${esc(d.name)}</span><span class="chip">${esc(d.tag)}</span><span style="font-size:11px;color:var(--tx2)">${n === 0 ? 'Today' : fmt(d.date)}</span></div>`;
-  }).join('') : '<div class="empty-state"><div class="ei">🗓️</div><div class="et">All clear</div><div class="es">No deadlines in the next 2 weeks</div></div>';
+  };
+  const DL_LIMIT = 6, hidden = Math.max(0, dl.length - DL_LIMIT);
+  $('hm-dl').innerHTML = dl.length
+    ? dl.slice(0, DL_LIMIT).map(dlRow).join('') +
+      (hidden > 0 ? `<div onclick="goTab('tasks')" style="font-size:11px;color:var(--acc);padding:8px 0;cursor:pointer;text-align:center;border-top:0.5px solid var(--bd)">+ ${hidden} more</div>` : '')
+    : '<div class="empty-state"><div class="ei">🗓️</div><div class="et">All clear</div><div class="es">No deadlines in the next 2 weeks</div></div>';
 
   // Today tasks
   const tt = S.tasks.filter(tk => tk.due_date === t);

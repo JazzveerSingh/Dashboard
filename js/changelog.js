@@ -1,5 +1,29 @@
 const CHANGELOG = [
   {
+    version: '1.7',
+    date: 'Apr 2025',
+    changes: {
+      New: [
+        'Pomodoro session logging — every focus session is saved with duration, task, and notes',
+        'Post-session card — after each session, optionally tag it to a task or course with a note',
+        'Custom timer durations — set any focus/break length or pick a preset (25/5, 50/10, 90/20)',
+        'Daily session goal — set a target number of pomodoros; progress dots reset at midnight',
+        'Password reset flow — "Forgot password?" sends a reset link; new password form with strength indicator',
+        'Dynamic weather location — auto-detects your location via GPS; falls back to profile city',
+      ],
+      Improved: [
+        'Profile now includes a Location field for weather when GPS is unavailable',
+        'Home deadline list shows a "+ N more" link instead of silently truncating at 6 items',
+        'Profile name is fully configurable — no longer hardcoded anywhere in the app',
+        'Sign-up form collects your name so the dashboard personalises immediately',
+        'Weather widget is clickable — opens your profile to update the location field',
+      ],
+      Fixed: [
+        'App title and Pomodoro tab title now reflect your profile name instead of a hardcoded name',
+      ],
+    },
+  },
+  {
     version: '1.6',
     date: 'Apr 2025',
     changes: {
@@ -72,7 +96,7 @@ const CHANGELOG = [
   },
 ];
 
-const CL_VERSION = '1.6';
+const CL_VERSION = '1.7';
 
 function clCheckOnLoad() {
   const seen = localStorage.getItem('cl_seen');

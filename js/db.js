@@ -5,7 +5,7 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // In-memory state (loaded from Supabase on login)
 const S = {
-  profile: { name: 'Jazz', avatar: '🎸' },
+  profile: { name: '', avatar: '🎸', location: '' },
   tasks: [],
   courses: [],
   assignments: [],
@@ -13,6 +13,7 @@ const S = {
   savings: [],
   habits: [],
   habitLogs: [],
+  pomoSessions: null, // loaded lazily when log tab opens
   userId: null
 };
 
@@ -54,7 +55,7 @@ async function loadAll() {
     dbGet('habit_logs', { order: 'log_date' })
   ]);
 
-  if (profile.data) S.profile = { name: profile.data.name, avatar: profile.data.avatar };
+  if (profile.data) S.profile = { name: profile.data.name || '', avatar: profile.data.avatar || '🎸', location: profile.data.location || '' };
   S.tasks = tasks;
   S.courses = courses;
   S.assignments = assignments;

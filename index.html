@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Jazz's Dashboard</title>
+<title>Student Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="css/style.css"/>
 </head>
@@ -13,15 +13,59 @@
 <div id="auth-screen">
   <div class="auth-card">
     <div class="auth-logo">🎸</div>
-    <h1 class="auth-title">Jazz's Dashboard</h1>
-    <p class="auth-sub">Sign in to access your dashboard</p>
     <div id="auth-error" class="auth-error" style="display:none"></div>
-    <div class="mrow"><label>Email</label><input id="auth-email" type="email" placeholder="you@email.com"/></div>
-    <div class="mrow"><label>Password</label><input id="auth-password" type="password" placeholder="••••••••"/></div>
-    <button class="bp" id="auth-signin-btn" onclick="signIn()" style="width:100%;margin-top:8px">Sign in</button>
-    <div class="auth-divider">or</div>
-    <button id="auth-signup-btn" onclick="signUp()" style="width:100%">Create account</button>
-    <p class="auth-note">Your data is private and synced across devices.</p>
+    <div id="forgot-success" class="auth-success" style="display:none">Check your email for a reset link.</div>
+
+    <!-- Sign in -->
+    <div id="av-signin">
+      <h1 class="auth-title">Student Dashboard</h1>
+      <p class="auth-sub">Sign in to your account</p>
+      <div class="mrow"><label>Email</label><input id="auth-email" type="email" placeholder="you@email.com"/></div>
+      <div class="mrow">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <label style="font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;font-weight:600">Password</label>
+          <span onclick="showAuthView('forgot')" class="auth-link">Forgot password?</span>
+        </div>
+        <input id="auth-password" type="password" placeholder="••••••••"/>
+      </div>
+      <button class="bp" id="auth-signin-btn" onclick="signIn()" style="width:100%;margin-top:8px">Sign in</button>
+      <div class="auth-divider">or</div>
+      <button onclick="showAuthView('signup')" style="width:100%">Create account</button>
+    </div>
+
+    <!-- Sign up -->
+    <div id="av-signup" style="display:none">
+      <h1 class="auth-title">Create account</h1>
+      <p class="auth-sub">Your data is private and synced across devices.</p>
+      <div class="mrow"><label>Your name</label><input id="signup-name" type="text" placeholder="e.g. Alex"/></div>
+      <div class="mrow"><label>Email</label><input id="signup-email" type="email" placeholder="you@email.com"/></div>
+      <div class="mrow"><label>Password</label><input id="signup-password" type="password" placeholder="Min. 6 characters"/></div>
+      <button class="bp" id="auth-signup-btn" onclick="signUp()" style="width:100%;margin-top:8px">Create account</button>
+      <div class="auth-divider">or</div>
+      <button onclick="showAuthView('signin')" style="width:100%">Sign in</button>
+    </div>
+
+    <!-- Forgot password -->
+    <div id="av-forgot" style="display:none">
+      <h1 class="auth-title">Reset password</h1>
+      <p class="auth-sub">Enter your email and we'll send a reset link.</p>
+      <div class="mrow"><label>Email</label><input id="forgot-email" type="email" placeholder="you@email.com"/></div>
+      <button class="bp" onclick="sendPasswordReset()" style="width:100%;margin-top:8px">Send reset link</button>
+      <div class="auth-divider"></div>
+      <button onclick="showAuthView('signin')" style="width:100%;color:var(--tx2)">← Back to sign in</button>
+    </div>
+
+    <!-- New password (shown after recovery link) -->
+    <div id="av-reset" style="display:none">
+      <h1 class="auth-title">New password</h1>
+      <p class="auth-sub">Choose a strong password (minimum 8 characters).</p>
+      <div class="mrow"><label>New password</label><input id="reset-pw1" type="password" placeholder="••••••••" oninput="pwStrength(this.value)"/></div>
+      <div class="pbg" style="margin-bottom:12px;height:3px"><div id="pw-str-bar" style="height:100%;border-radius:2px;width:0%;transition:width .2s,background .2s"></div></div>
+      <div class="mrow"><label>Confirm password</label><input id="reset-pw2" type="password" placeholder="••••••••"/></div>
+      <button class="bp" id="reset-btn" onclick="updatePassword()" style="width:100%;margin-top:8px" disabled>Set new password</button>
+    </div>
+
+    <p class="auth-note" style="margin-top:16px">Your data is synced across devices.</p>
   </div>
 </div>
 
@@ -30,6 +74,7 @@
   <div class="modal">
     <h3>Edit profile</h3>
     <div class="mrow"><label>Name</label><input id="p-name" type="text"/></div>
+    <div class="mrow"><label>Location</label><input id="p-location" type="text" placeholder="City or postal code (for weather)"/></div>
     <div class="mrow"><label>Avatar</label><div class="egrid" id="p-emojis"></div></div>
     <div class="mbtns"><button onclick="closeM('m-profile')">Cancel</button><button class="bp" onclick="saveProfile()">Save</button></div>
   </div>
@@ -186,7 +231,7 @@
     <div class="sec active" id="sec-home">
       <div class="hdr">
         <div class="hdr-l"><h1 id="greeting">Good morning ✦</h1><p>Here's what's on today.</p></div>
-        <div class="wx" id="wx-card">
+        <div class="wx" id="wx-card" onclick="openProfile()" title="Click to update location" style="cursor:pointer">
           <div style="font-size:24px;line-height:1" id="wx-icon">⏳</div>
           <div><div style="font-size:18px;font-weight:600;line-height:1" id="wx-temp">--°C</div><div style="font-size:10px;color:var(--tx2);margin-top:2px" id="wx-cond">Loading...</div></div>
           <div class="wx-sep"><div style="font-size:10px;color:var(--tx2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px">3 days</div><div class="wx-fc" id="wx-fc"></div></div>
@@ -219,16 +264,73 @@
             <div><div class="st">Overall heatmap</div><div id="hm-heatmap"></div></div>
           </div>
         </div>
-        <div class="card"><div class="st">Pomodoro timer</div>
-          <div class="pomo">
-            <div class="plbl" id="p-lbl">Focus session</div>
-            <div class="ptime" id="p-time">25:00</div>
-            <div style="width:100%;max-width:260px"><div class="pbg"><div class="pf fb" id="p-bar" style="width:100%"></div></div></div>
-            <div class="pbtns">
-              <button id="p-start" onclick="pomoSS()">&#9654; Start</button>
-              <button onclick="pomoReset()">&#8635; Reset</button>
-              <button id="p-mode" onclick="pomoMode()">Break mode</button>
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <span class="st" style="margin:0">Pomodoro</span>
+            <div style="display:flex;background:var(--bg3);border-radius:var(--r);padding:2px;gap:1px">
+              <button class="mtab active" data-ptab="timer" onclick="pomoTab('timer')">Timer</button>
+              <button class="mtab" data-ptab="log" onclick="pomoTab('log')">Log</button>
             </div>
+          </div>
+
+          <!-- Timer tab -->
+          <div id="pt-timer">
+            <div id="p-goal-display" style="display:none;text-align:center;margin-bottom:10px;padding:8px;background:var(--bg3);border-radius:var(--r)"></div>
+            <div class="pomo">
+              <div class="plbl" id="p-lbl">Focus session</div>
+              <div class="ptime" id="p-time">25:00</div>
+              <div style="width:100%;max-width:260px"><div class="pbg"><div class="pf fb" id="p-bar" style="width:100%"></div></div></div>
+              <div class="pbtns">
+                <button id="p-start" onclick="pomoSS()">&#9654; Start</button>
+                <button onclick="pomoReset()">&#8635; Reset</button>
+                <button id="p-mode" onclick="pomoMode()">Break mode</button>
+              </div>
+            </div>
+            <!-- Post-session -->
+            <div id="p-postsession" style="display:none;margin-top:12px;padding:12px;background:var(--bg3);border-radius:var(--rl)">
+              <div style="font-size:12px;font-weight:600;margin-bottom:8px">What was this session for?</div>
+              <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+                <select id="ps-course" style="flex:1;min-width:110px;font-size:12px;padding:5px 8px"></select>
+                <select id="ps-task" style="flex:1;min-width:110px;font-size:12px;padding:5px 8px"></select>
+              </div>
+              <input id="ps-notes" type="text" placeholder="Notes (optional)…" style="width:100%;font-size:12px;margin-bottom:8px"/>
+              <div style="display:flex;gap:6px">
+                <button class="bp" onclick="savePomoSession()" style="font-size:12px;padding:5px 14px">Save</button>
+                <button onclick="skipPomoSession()" style="font-size:12px;padding:5px 14px">Skip</button>
+              </div>
+            </div>
+            <!-- Settings -->
+            <div style="margin-top:12px;border-top:0.5px solid var(--bd);padding-top:10px">
+              <button onclick="togglePomoSettings()" style="font-size:11px;color:var(--tx2);background:none;border:none;padding:0;cursor:pointer;display:flex;align-items:center;gap:5px;font-weight:500">
+                <span id="p-settings-arrow">▶</span> Settings
+              </button>
+              <div id="p-settings" style="display:none;margin-top:10px">
+                <div style="display:flex;gap:5px;margin-bottom:10px">
+                  <button class="preset-btn mtab" data-f="25" data-b="5"  onclick="setPreset(25,5)"  style="font-size:11px;padding:4px 10px">25/5</button>
+                  <button class="preset-btn mtab" data-f="50" data-b="10" onclick="setPreset(50,10)" style="font-size:11px;padding:4px 10px">50/10</button>
+                  <button class="preset-btn mtab" data-f="90" data-b="20" onclick="setPreset(90,20)" style="font-size:11px;padding:4px 10px">90/20</button>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+                  <label style="font-size:11px;color:var(--tx2)">Focus (min)</label>
+                  <input id="p-focus-min" type="number" min="1" max="180" style="width:58px;font-size:12px;padding:4px 6px" oninput="onPomoFocusInput(this.value)"/>
+                  <label style="font-size:11px;color:var(--tx2)">Break (min)</label>
+                  <input id="p-break-min" type="number" min="1" max="60" style="width:52px;font-size:12px;padding:4px 6px" oninput="onPomoBreakInput(this.value)"/>
+                  <span onclick="resetPomoDefaults()" style="font-size:11px;color:var(--acc);cursor:pointer">Reset</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <label style="font-size:11px;color:var(--tx2)">Daily goal</label>
+                  <input id="p-goal-input" type="number" min="1" max="20" placeholder="sessions" style="width:78px;font-size:12px;padding:4px 6px" oninput="onPomoGoalInput(this.value)"/>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Log tab -->
+          <div id="pt-log" style="display:none">
+            <div style="margin-bottom:10px">
+              <select id="pl-course-filter" style="font-size:12px;padding:4px 8px;width:100%" onchange="pomoLogCourseFilter=this.value;renderPomoLog()"></select>
+            </div>
+            <div id="p-log-list"></div>
           </div>
         </div>
       </div>
