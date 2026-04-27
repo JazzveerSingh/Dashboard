@@ -75,12 +75,11 @@ const CA_PRE = 'ca_';
 function caLoad(cid) {
   try {
     const d = JSON.parse(localStorage.getItem(CA_PRE + cid));
-    return d ? { mode: 'weighted', target: 80, asgn: {}, ...d } : { mode: 'weighted', target: 80, asgn: {} };
-  } catch { return { mode: 'weighted', target: 80, asgn: {} }; }
+    return d ? { target: 80, asgn: {}, ...d } : { target: 80, asgn: {} };
+  } catch { return { target: 80, asgn: {} }; }
 }
 function caSave(cid, data) { try { localStorage.setItem(CA_PRE + cid, JSON.stringify(data)); } catch {} }
 
-function caSetMode(cid, mode) { const d = caLoad(cid); d.mode = mode; caSave(cid, d); renderAcademics(); }
 function caSetTarget(cid, val) { const d = caLoad(cid); d.target = parseFloat(val) || 0; caSave(cid, d); caRefresh(cid); }
 
 function caSetScore(cid, aid, val) {
@@ -111,12 +110,12 @@ function caScoreBlur(cid) {
 function caCalc(cid, assigns) {
   const data = caLoad(cid), asgn = data.asgn || {}, target = data.target ?? 80;
   const completed = assigns.filter(a => a.status === 'done').map(a => ({
-    score: asgn[a.id]?.score, max: asgn[a.id]?.max ?? 100, weight: asgn[a.id]?.weight ?? 0
+    score: asgn[a.id]?.score, max: asgn[a.id]?.max ?? 100
   }));
   const remaining = assigns.filter(a => a.status !== 'done').map(a => ({
-    id: a.id, max: asgn[a.id]?.max ?? 100, weight: asgn[a.id]?.weight ?? 0
+    id: a.id, max: asgn[a.id]?.max ?? 100
   }));
-  return data.mode === 'points' ? gcCalcP({ completed, remaining, target }) : gcCalcW({ completed, remaining, target });
+  return gcCalcP({ completed, remaining, target });
 }
 
 function caEffGrade(cid, assigns) {
@@ -133,15 +132,6 @@ function caRefresh(cid) {
 
   const proj = document.getElementById(`ca-proj-${cid}`);
   if (proj) proj.innerHTML = caProjInner(res, data, assigns);
-
-  const isW = data.mode === 'weighted';
-  const totalW = assigns.reduce((s, a) => s + (asgn[a.id]?.weight || 0), 0);
-  const warn = document.getElementById(`ca-warn-${cid}`);
-  if (warn) {
-    const show = isW && assigns.length > 0 && Math.abs(totalW - 100) > 0.5;
-    warn.style.display = show ? '' : 'none';
-    if (show) warn.textContent = `⚠ Weights total ${totalW.toFixed(1)}% — should add up to 100%.`;
-  }
 
   const per = res.per || [];
   assigns.filter(a => a.status !== 'done').forEach(a => {
@@ -168,7 +158,7 @@ function caProjInner(res, data, assigns) {
   if (assigns.length === 0) return '<div style="font-size:12px;color:var(--tx3);padding:6px 0">Add assessments to see grade projections.</div>';
   const pct = v => v != null ? v.toFixed(1) + '%' : '—';
   const { status, best, worst, reqPct } = res;
-  const hasDoneData = res.mode === 'weighted' ? (res.cW || 0) > 0 : (res.cMax || 0) > 0;
+  const hasDoneData = (res.cMax || 0) > 0;
   const cur = hasDoneData ? pct(res.currentGrade) : '—';
   const reqVal = status === 'guaranteed' ? '✓' : status === 'impossible' ? '> 100%' : pct(reqPct);
   const reqColor = status === 'impossible' ? 'var(--red)' : status === 'guaranteed' ? 'var(--green)' : '';
@@ -211,7 +201,6 @@ function sfApply(assigns, cid, asgn) {
   switch (d.sort) {
     case 'due_asc':  r.sort((a,b) => (a.due_date||'9999') < (b.due_date||'9999') ? -1 : 1); break;
     case 'due_desc': r.sort((a,b) => (a.due_date||'') > (b.due_date||'') ? -1 : 1); break;
-    case 'weight_desc': r.sort((a,b) => (asgn[b.id]?.weight||0) - (asgn[a.id]?.weight||0)); break;
     case 'score_asc': r.sort((a,b) => {
       const pa = asgn[a.id]?.score != null ? asgn[a.id].score/(asgn[a.id]?.max||100) : Infinity;
       const pb = asgn[b.id]?.score != null ? asgn[b.id].score/(asgn[b.id]?.max||100) : Infinity;
@@ -227,7 +216,7 @@ function sfBarHtml(cid, assigns, asgn) {
   const d = sfLoad(cid);
   const vis = sfApply(assigns, cid, asgn).length;
   const hasFilters = d.statuses.length > 0 || d.unscoredOnly;
-  const sortOpts = [['status','Status'],['due_asc','Due ↑'],['due_desc','Due ↓'],['weight_desc','Weight ↓'],['score_asc','Score ↑'],['name','A–Z']];
+  const sortOpts = [['status','Status'],['due_asc','Due ↑'],['due_desc','Due ↓'],['score_asc','Score ↑'],['name','A–Z']];
   const sortSel = `<select onchange="sfSetSort(${cid},this.value)" style="font-size:11px;padding:2px 6px;height:24px;border-radius:var(--r)">${sortOpts.map(([v,l])=>`<option value="${v}"${d.sort===v?' selected':''}>${l}</option>`).join('')}</select>`;
   const sPills = ['todo','ip','done'].map(s => {
     const l = s==='done'?'Done':s==='ip'?'In progress':'To do', on = d.statuses.includes(s);
@@ -317,7 +306,7 @@ function updateNotes(id, v) { debounceNotes(id, v); }
 // ── Assignment CRUD ────────────────────────────────────────────
 function openAssign(cid) {
   $('a-name').value = ''; $('a-date').value = ''; $('a-status').value = 'todo';
-  $('a-score').value = ''; $('a-max').value = ''; $('a-weight').value = '';
+  $('a-score').value = ''; $('a-max').value = '';
   $('a-cid').value = cid; openM('m-assign');
 }
 
@@ -326,26 +315,16 @@ async function saveAssign() {
   const cid = parseInt($('a-cid').value);
   const row = await dbInsert('assignments', { course_id: cid, name, due_date: $('a-date').value || null, status: $('a-status').value });
   if (row) {
-    const sv = parseFloat($('a-score').value), mv = parseFloat($('a-max').value), wv = parseFloat($('a-weight').value);
-    if (!isNaN(sv) || !isNaN(mv) || !isNaN(wv)) {
+    const sv = parseFloat($('a-score').value), mv = parseFloat($('a-max').value);
+    if (!isNaN(sv) || !isNaN(mv)) {
       const d = caLoad(cid);
       if (!d.asgn[row.id]) d.asgn[row.id] = {};
       if (!isNaN(sv)) d.asgn[row.id].score = sv;
       d.asgn[row.id].max = !isNaN(mv) ? mv : 100;
-      if (!isNaN(wv)) d.asgn[row.id].weight = wv;
       caSave(cid, d);
     }
     S.assignments.push(row); closeM('m-assign'); renderAcademics();
   }
-}
-
-async function updateAssignWeight(aid, v) {
-  const a = S.assignments.find(a => a.id === aid); if (!a) return;
-  const n = v === '' ? null : parseFloat(v);
-  const d = caLoad(a.course_id);
-  if (!d.asgn[aid]) d.asgn[aid] = {};
-  if (n == null) delete d.asgn[aid].weight; else d.asgn[aid].weight = n;
-  caSave(a.course_id, d); caRefresh(a.course_id);
 }
 
 async function cycleStatus(aid) {
@@ -370,15 +349,7 @@ function renderAcaMeta() {
   const sp = $('ac-spark'); if (sp) sp.innerHTML = ghGpaSpark();
   const all = S.assignments, done = all.filter(a => a.status==='done').length;
   $('ac-done').textContent = `${done} / ${all.length}`;
-  let totalW = 0, doneW = 0, hasW = false;
-  S.courses.forEach(c => {
-    const asgn = caLoad(c.id).asgn || {};
-    S.assignments.filter(a => a.course_id===c.id).forEach(a => {
-      const w = asgn[a.id]?.weight;
-      if (w != null && !isNaN(w)) { hasW=true; totalW+=w; if (a.status==='done') doneW+=w; }
-    });
-  });
-  $('ac-sub').textContent = hasW ? (totalW>0 ? Math.round(doneW/totalW*100)+'% by weight' : '') : (all.length ? Math.round(done/all.length*100)+'% complete' : '');
+  $('ac-sub').textContent = all.length ? Math.round(done/all.length*100)+'% complete' : '';
 }
 
 // ── Where marks are being lost ─────────────────────────────────
@@ -413,17 +384,14 @@ function renderAcademics() {
   const coursesHtml = S.courses.map(c => {
     const color = getCourseColor(c.id);
     const allAssigns = S.assignments.filter(a => a.course_id===c.id);
-    const data = caLoad(c.id), isW = data.mode==='weighted', asgn = data.asgn||{}, target = data.target??80;
+    const data = caLoad(c.id), asgn = data.asgn||{}, target = data.target??80;
     const res = caCalc(c.id, allAssigns), per = res.per||[];
-    const totalW = allAssigns.reduce((s,a) => s+(asgn[a.id]?.weight||0), 0);
-    const showWarn = isW && allAssigns.length>0 && Math.abs(totalW-100)>0.5;
     const visibleAssigns = sfApply(allAssigns, c.id, asgn);
     const sf = sfLoad(c.id), isFiltered = sf.statuses.length>0 || sf.unscoredOnly;
 
     const rows = visibleAssigns.map(a => {
       const isDone = a.status==='done';
       const score = asgn[a.id]?.score, max = asgn[a.id]?.max??100;
-      const w = asgn[a.id]?.weight;
       const isOverdue = !isDone && a.due_date && a.due_date < today();
 
       let scoreCell;
@@ -462,11 +430,6 @@ function renderAcademics() {
         </td>
         <td style="padding:5px 6px">${scoreCell}</td>
         <td style="padding:5px 6px;text-align:center">
-          <input type="number" min="0" max="100" value="${w??''}" placeholder="—"
-            style="width:44px;text-align:center;font-size:12px;padding:3px 4px"
-            oninput="updateAssignWeight(${a.id},this.value)"/>
-        </td>
-        <td style="padding:5px 6px;text-align:center">
           <span class="badge ${sc(a.status)}" style="cursor:pointer;white-space:nowrap" onclick="cycleStatus(${a.id})" title="Click to cycle">${sl(a.status)}</span>
         </td>
         <td style="padding:5px 6px;font-size:11px;color:var(--tx2);white-space:nowrap">${fmt(a.due_date)}</td>
@@ -475,7 +438,7 @@ function renderAcademics() {
     }).join('');
 
     const emptyFilter = isFiltered && visibleAssigns.length===0
-      ? `<tr><td colspan="6" style="text-align:center;padding:12px;font-size:12px;color:var(--tx3)">No assessments match the current filters.</td></tr>` : '';
+      ? `<tr><td colspan="5" style="text-align:center;padding:12px;font-size:12px;color:var(--tx3)">No assessments match the current filters.</td></tr>` : '';
 
     const savedAt = localStorage.getItem(`ns_${c.id}`);
 
@@ -498,25 +461,15 @@ function renderAcademics() {
         </div>
       </div>
 
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
-        <div style="display:flex;border:0.5px solid var(--bds);border-radius:var(--r);overflow:hidden;flex-shrink:0">
-          <button onclick="caSetMode(${c.id},'weighted')" style="border:none;border-radius:0;padding:4px 10px;font-size:11px;font-weight:500;${isW?'background:var(--acc);color:#fff':''}">Weighted %</button>
-          <button onclick="caSetMode(${c.id},'points')" style="border:none;border-radius:0;border-left:0.5px solid var(--bds);padding:4px 10px;font-size:11px;font-weight:500;${!isW?'background:var(--acc);color:#fff':''}">Total Points</button>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <span style="font-size:11px;color:var(--tx2);white-space:nowrap">Target</span>
-          <input type="number" min="0" max="100" value="${data.target??80}"
-            style="width:52px;text-align:center;font-size:13px;font-weight:600;padding:3px 6px"
-            oninput="caSetTarget(${c.id},this.value)"/>
-          <span style="font-size:11px;color:var(--tx2)">%</span>
-        </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+        <span style="font-size:11px;color:var(--tx2);white-space:nowrap">Target</span>
+        <input type="number" min="0" max="100" value="${data.target??80}"
+          style="width:52px;text-align:center;font-size:13px;font-weight:600;padding:3px 6px"
+          oninput="caSetTarget(${c.id},this.value)"/>
+        <span style="font-size:11px;color:var(--tx2)">%</span>
       </div>
 
       <div id="ca-proj-${c.id}">${caProjInner(res, data, allAssigns)}</div>
-
-      <div id="ca-warn-${c.id}" style="background:var(--famber);color:var(--amber);border-radius:var(--r);padding:6px 10px;font-size:12px;margin:8px 0;${showWarn?'':'display:none'}">
-        ⚠ Weights total ${totalW.toFixed(1)}% — should add up to 100%.
-      </div>
 
       ${lostMarksHtml(allAssigns, asgn, target)}
 
@@ -527,7 +480,6 @@ function renderAcademics() {
           <thead><tr style="border-bottom:0.5px solid var(--bd)">
             <th style="${thS};text-align:left">Assessment</th>
             <th style="${thS};text-align:center">Score / Max</th>
-            <th style="${thS};text-align:center">Wt %</th>
             <th style="${thS};text-align:center">Status</th>
             <th style="${thS};text-align:center">Due</th>
             <th style="width:24px"></th>
