@@ -228,6 +228,8 @@ textarea.notes:focus { background:var(--bg2); border-color:var(--acc); }
 /* ── MODALS ── */
 .mbg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); backdrop-filter:blur(6px); z-index:200; align-items:center; justify-content:center; }
 .mbg.open { display:flex; animation:fadein .15s ease; }
+@keyframes ca-flash { 0%,100% { background-color:transparent } 40% { background-color:var(--fpurple) } }
+.ca-flash { animation: ca-flash 0.7s ease; }
 @keyframes fadein { from { opacity:0; } to { opacity:1; } }
 .modal { background:var(--bg2); border-radius:var(--rxl); padding:24px; width:min(400px,92vw); border:0.5px solid var(--bd); box-shadow:var(--sh2); animation:slidein .15s ease; }
 @keyframes slidein { from { transform:translateY(8px); opacity:0; } to { transform:translateY(0); opacity:1; } }

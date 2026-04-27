@@ -94,6 +94,78 @@ function getAssignType(a) {
 
 // ── Type toggle in modal ───────────────────────────────────────
 let acAssignType = 'assignment';
+let acEditId = null;
+let acEditOrigAsgn = null;
+
+function caEditOpen(aid) {
+  const a = S.assignments.find(a => a.id === aid); if (!a) return;
+  const d = caLoad(a.course_id);
+  acEditOrigAsgn = JSON.parse(JSON.stringify(d.asgn || {}));
+  acEditId = aid;
+  renderAcademics();
+}
+
+function caEditCancel() {
+  if (acEditId != null && acEditOrigAsgn != null) {
+    const a = S.assignments.find(a => a.id === acEditId);
+    if (a) { const d = caLoad(a.course_id); d.asgn = acEditOrigAsgn; caSave(a.course_id, d); }
+  }
+  acEditId = null; acEditOrigAsgn = null;
+  renderAcademics();
+}
+
+async function caEditSave(aid) {
+  const a = S.assignments.find(a => a.id === aid); if (!a) return;
+  const cid = a.course_id;
+  const nameVal = document.getElementById(`ce-name-${aid}`)?.value.trim();
+  if (!nameVal) return;
+  const dateVal = document.getElementById(`ce-date-${aid}`)?.value || null;
+  const scoreVal = parseFloat(document.getElementById(`ce-score-${aid}`)?.value);
+  const maxVal   = parseFloat(document.getElementById(`ce-max-${aid}`)?.value);
+  const weightVal= parseFloat(document.getElementById(`ce-weight-${aid}`)?.value);
+  const statusEl = document.getElementById(`ce-status-${aid}`);
+  const typeVal  = document.getElementById(`ce-type-${aid}`)?.value;
+  const newStatus = statusEl?.value || a.status;
+  await dbUpdate('assignments', aid, { name: nameVal, due_date: dateVal, status: newStatus });
+  a.name = nameVal; a.due_date = dateVal; a.status = newStatus;
+  const d = caLoad(cid);
+  if (!d.asgn[aid]) d.asgn[aid] = {};
+  if (!isNaN(scoreVal)) d.asgn[aid].score = scoreVal; else delete d.asgn[aid].score;
+  d.asgn[aid].max = (!isNaN(maxVal) && maxVal > 0) ? maxVal : 100;
+  if (!isNaN(weightVal) && weightVal > 0) d.asgn[aid].weight = weightVal; else delete d.asgn[aid].weight;
+  if (typeVal) d.asgn[aid].type = typeVal;
+  caSave(cid, d);
+  const assigns = S.assignments.filter(a => a.course_id === cid);
+  const g = caEffGrade(cid, assigns);
+  if (g != null) ghAppend(cid, g, { updated: true });
+  acEditId = null; acEditOrigAsgn = null;
+  renderAcademics(); renderHome();
+  setTimeout(() => {
+    const row = document.getElementById(`ca-row-${aid}`);
+    if (row) { row.classList.add('ca-flash'); setTimeout(() => row.classList.remove('ca-flash'), 700); }
+  }, 30);
+}
+
+function caEditWeightLive(aid, cid, val) {
+  const wv = parseFloat(val);
+  const d = caLoad(cid);
+  if (!d.asgn[aid]) d.asgn[aid] = {};
+  if (!isNaN(wv) && wv > 0) d.asgn[aid].weight = wv; else delete d.asgn[aid].weight;
+  caSave(cid, d); caRefresh(cid);
+  const total = S.assignments.filter(a2 => a2.course_id === cid)
+    .reduce((s, a2) => s + (d.asgn[a2.id]?.weight ?? 1), 0);
+  const warn = document.getElementById(`ce-wwarn-${aid}`);
+  if (warn) warn.style.display = total > 100 ? '' : 'none';
+}
+
+function caEditTypeSwitch(aid, t) {
+  const inp = document.getElementById(`ce-type-${aid}`); if (inp) inp.value = t;
+  const aBtn = document.getElementById(`ce-t-asgn-${aid}`);
+  const tBtn = document.getElementById(`ce-t-test-${aid}`);
+  if (aBtn) aBtn.style.cssText = `border:none;border-radius:0;padding:3px 10px;font-size:11px;font-weight:500;${t==='assignment'?'background:var(--acc);color:#fff':''}`;
+  if (tBtn) tBtn.style.cssText = `border:none;border-radius:0;border-left:0.5px solid var(--bds);padding:3px 10px;font-size:11px;font-weight:500;${t==='test'?'background:var(--acc);color:#fff':''}`;
+}
+
 function acSetType(t) {
   acAssignType = t;
   const isTest = t === 'test';
@@ -415,6 +487,7 @@ function renderAcademics() {
   const sl = s => s==='done'?'Done':s==='ip'?'In progress':'To do';
   const sc = s => s==='done'?'sd':s==='ip'?'si':'st2';
   const thS = 'padding:4px 6px;font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;font-weight:600;white-space:nowrap';
+  const lbS = 'font-size:10px;color:var(--tx2);font-weight:600;text-transform:uppercase;letter-spacing:.4px';
 
   const coursesHtml = S.courses.map(c => {
     const color = getCourseColor(c.id);
@@ -429,7 +502,66 @@ function renderAcademics() {
       const logicallyDone = isDoneLogically(a, asgn);
       const score = asgn[a.id]?.score, max = asgn[a.id]?.max??100, weight = asgn[a.id]?.weight??1;
       const isOverdue = !logicallyDone && a.due_date && a.due_date < today();
+      const hasScore = score != null;
 
+      // ── Edit row ──────────────────────────────────────────────
+      if (acEditId === a.id) {
+        const locked = hasScore;
+        const dStyle = locked ? 'opacity:.5;pointer-events:none;' : '';
+        const totalW = S.assignments.filter(a2 => a2.course_id === c.id)
+          .reduce((s2, a2) => s2 + (asgn[a2.id]?.weight ?? 1), 0);
+        return `<tr id="ca-row-${a.id}" style="border-bottom:0.5px solid var(--bd);background:var(--bg3)">
+          <td colspan="5" style="padding:10px 8px">
+            <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">
+              <div style="display:flex;flex-direction:column;gap:3px;flex:2;min-width:140px">
+                <label style="${lbS}">Name</label>
+                <input id="ce-name-${a.id}" value="${esc(a.name)}" style="font-size:13px;padding:4px 8px"/>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:3px">
+                <label style="${lbS}">Score</label>
+                <input id="ce-score-${a.id}" type="number" min="0" value="${score??''}" placeholder="—" style="width:56px;font-size:12px;padding:4px 6px;text-align:center"/>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:3px">
+                <label style="${lbS}">Max</label>
+                <input id="ce-max-${a.id}" type="number" min="1" value="${max}" style="width:52px;font-size:12px;padding:4px 6px;text-align:center"/>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:3px">
+                <label style="${lbS}">Weight</label>
+                <input id="ce-weight-${a.id}" type="number" min="0.1" step="0.1" value="${weight!==1?weight:''}" placeholder="1" style="width:52px;font-size:12px;padding:4px 6px;text-align:center" oninput="caEditWeightLive(${a.id},${c.id},this.value)"/>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:3px">
+                <label style="${lbS}">Due</label>
+                <input id="ce-date-${a.id}" type="date" value="${a.due_date??''}" style="font-size:12px;padding:4px 6px"/>
+              </div>
+              ${!isTestType ? `<div style="display:flex;flex-direction:column;gap:3px">
+                <label style="${lbS}">Status</label>
+                <select id="ce-status-${a.id}" style="font-size:12px;padding:4px 6px">
+                  <option value="todo"${a.status==='todo'?' selected':''}>To do</option>
+                  <option value="ip"${a.status==='ip'?' selected':''}>In progress</option>
+                  <option value="done"${a.status==='done'?' selected':''}>Done</option>
+                </select>
+              </div>` : ''}
+              <div style="display:flex;flex-direction:column;gap:3px">
+                <label style="${lbS}">Type</label>
+                <div style="display:flex;border:0.5px solid var(--bds);border-radius:var(--r);overflow:hidden;width:fit-content;${dStyle}">
+                  <button id="ce-t-asgn-${a.id}" onclick="caEditTypeSwitch(${a.id},'assignment')"${locked?' disabled':''} style="border:none;border-radius:0;padding:3px 10px;font-size:11px;font-weight:500;${!isTestType?'background:var(--acc);color:#fff':''}">Assignment</button>
+                  <button id="ce-t-test-${a.id}" onclick="caEditTypeSwitch(${a.id},'test')"${locked?' disabled':''} style="border:none;border-radius:0;border-left:0.5px solid var(--bds);padding:3px 10px;font-size:11px;font-weight:500;${isTestType?'background:var(--acc);color:#fff':''}">Test</button>
+                </div>
+                <input type="hidden" id="ce-type-${a.id}" value="${isTestType?'test':'assignment'}"/>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+              <span id="ce-wwarn-${a.id}" style="font-size:11px;color:var(--amber);display:${totalW>100?'':'none'}">⚠ Total weight exceeds 100</span>
+              <div style="margin-left:auto;display:flex;gap:6px">
+                <button onclick="caEditCancel()" style="font-size:12px;padding:4px 10px">Cancel</button>
+                <button class="bp" onclick="caEditSave(${a.id})" style="font-size:12px;padding:4px 10px">Save</button>
+              </div>
+            </div>
+          </td>
+        </tr>`;
+      }
+
+      // ── Normal row ────────────────────────────────────────────
       let scoreCell;
       if (logicallyDone || isTestType) {
         const pct = score!=null && max>0 ? score/max*100 : null;
@@ -470,7 +602,7 @@ function renderAcademics() {
         ? `<span style="font-size:9px;font-weight:600;color:var(--acc);background:var(--fpurple);border-radius:3px;padding:1px 5px;flex-shrink:0">×${weight}</span>`
         : '';
 
-      return `<tr style="border-bottom:0.5px solid var(--bd)">
+      return `<tr id="ca-row-${a.id}" style="border-bottom:0.5px solid var(--bd)">
         <td style="padding:5px 6px;font-size:13px">
           <div style="display:flex;align-items:center;gap:5px">
             <div style="width:4px;height:4px;border-radius:50%;background:${color};flex-shrink:0"></div>
@@ -480,7 +612,10 @@ function renderAcademics() {
         <td style="padding:5px 6px">${scoreCell}</td>
         <td style="padding:5px 6px;text-align:center">${statusCell}</td>
         <td style="padding:5px 6px;font-size:11px;color:var(--tx2);white-space:nowrap">${fmt(a.due_date)}</td>
-        <td style="padding:5px 6px;text-align:right"><button class="xb" onclick="delAssign(${a.id})">✕</button></td>
+        <td style="padding:5px 4px;text-align:right;white-space:nowrap">
+          <button class="xb" onclick="caEditOpen(${a.id})" title="Edit" style="margin-right:2px">✎</button>
+          <button class="xb" onclick="delAssign(${a.id})">✕</button>
+        </td>
       </tr>`;
     }).join('');
 
@@ -529,7 +664,7 @@ function renderAcademics() {
             <th style="${thS};text-align:center">Score / Max</th>
             <th style="${thS};text-align:center">Status</th>
             <th style="${thS};text-align:center">Due</th>
-            <th style="width:24px"></th>
+            <th style="width:54px"></th>
           </tr></thead>
           <tbody>${rows}${emptyFilter}</tbody>
         </table>
