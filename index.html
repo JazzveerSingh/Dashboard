@@ -48,16 +48,19 @@
   <div class="modal">
     <h3>Add course</h3>
     <div class="mrow"><label>Name</label><input id="c-name" type="text" placeholder="e.g. Calculus (MCV4U)"/></div>
-    <div class="mrow"><label>Grade (%)</label><input id="c-grade" type="number" min="0" max="100"/></div>
+    <div class="mrow"><label>Starting grade (%)</label><input id="c-grade" type="number" min="0" max="100" placeholder="Optional"/></div>
+    <div class="mrow"><label>Colour</label><div id="c-palette" style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-top:2px"></div></div>
     <div class="mbtns"><button onclick="closeM('m-course')">Cancel</button><button class="bp" onclick="saveCourse()">Add</button></div>
   </div>
 </div>
 <div class="mbg" id="m-assign">
   <div class="modal">
-    <h3>Add assignment</h3>
+    <h3>Add assessment</h3>
     <div class="mrow"><label>Name</label><input id="a-name" type="text" placeholder="Assignment name"/></div>
     <div class="mrow"><label>Due date</label><input id="a-date" type="date"/></div>
     <div class="mrow"><label>Status</label><select id="a-status"><option value="todo">To do</option><option value="ip">In progress</option><option value="done">Done</option></select></div>
+    <div class="mrow"><label>Score earned</label><input id="a-score" type="number" min="0" placeholder="e.g. 73 (optional)"/></div>
+    <div class="mrow"><label>Max points</label><input id="a-max" type="number" min="1" placeholder="e.g. 100 (optional)"/></div>
     <div class="mrow"><label>Weight (%)</label><input id="a-weight" type="number" min="0" max="100" placeholder="e.g. 20 (optional)"/></div>
     <input type="hidden" id="a-cid"/>
     <div class="mbtns"><button onclick="closeM('m-assign')">Cancel</button><button class="bp" onclick="saveAssign()">Add</button></div>
@@ -200,7 +203,7 @@
 
     <!-- ACADEMICS -->
     <div class="sec" id="sec-academics">
-      <div class="hdr"><div class="hdr-l"><h1>Academics</h1><p>Courses, grades and assignments.</p></div><button class="bp" onclick="openM('m-course')">+ Add course</button></div>
+      <div class="hdr"><div class="hdr-l"><h1>Academics</h1><p>Courses, grades and assessments.</p></div><button class="bp" onclick="openCourseModal()">+ Add course</button></div>
       <div class="content">
         <div class="g2" style="margin-bottom:14px">
           <div class="mc"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><div class="ml" style="margin-bottom:0">Average</div><span id="ac-spark" style="display:inline-flex;align-items:center"></span></div><div class="mv" id="ac-avg">—</div><div style="margin-top:6px"><div class="pbg"><div class="pf fp" id="ac-bar" style="width:0%"></div></div></div></div>

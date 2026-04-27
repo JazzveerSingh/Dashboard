@@ -250,7 +250,14 @@ textarea.notes:focus { background:var(--bg2); border-color:var(--acc); }
 .spinner { width:18px; height:18px; border:2px solid var(--bg3); border-top-color:var(--acc); border-radius:50%; animation:spin .7s linear infinite; }
 @keyframes spin { to { transform:rotate(360deg); } }
 
-/* ── GRADE CALCULATOR ── */
-.gc-tables { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
-.gc-sum { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px; }
-@media(max-width:640px) { .gc-tables { grid-template-columns:1fr; } .gc-sum { grid-template-columns:1fr 1fr; } }
+/* ── NUMBER INPUT SPINNERS ── */
+input[type=number] { -moz-appearance:textfield; }
+input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+
+/* ── SORT / FILTER BAR ── */
+.sfbar { display:flex; gap:5px; flex-wrap:wrap; align-items:center; margin-bottom:8px; padding-bottom:8px; border-bottom:0.5px solid var(--bd); }
+.sfpill { font-size:11px; padding:3px 9px; border-radius:20px; cursor:pointer; border:0.5px solid var(--bds); background:var(--bg2); color:var(--tx2); user-select:none; display:inline-block; white-space:nowrap; }
+.sfpill.on { background:var(--acc); color:#fff; border-color:var(--acc); }
+
+/* ── NOTE STATUS ── */
+.note-status { font-size:11px; color:var(--tx3); margin-top:3px; min-height:15px; transition:color .2s; }

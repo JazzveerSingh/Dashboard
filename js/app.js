@@ -98,11 +98,12 @@ function renderHome() {
   // Deadlines
   const dl = [];
   S.tasks.filter(tk => !tk.done && tk.due_date).forEach(tk => { const n = dfn(tk.due_date); if (n >= -1 && n <= 14) dl.push({ name: tk.name, date: tk.due_date, tag: tk.tag }); });
-  S.assignments.filter(a => a.status !== 'done' && a.due_date).forEach(a => { const n = dfn(a.due_date); if (n >= -1 && n <= 14) dl.push({ name: a.name, date: a.due_date, tag: 'academics' }); });
+  S.assignments.filter(a => a.status !== 'done' && a.due_date).forEach(a => { const n = dfn(a.due_date); if (n >= -1 && n <= 14) dl.push({ name: a.name, date: a.due_date, tag: 'academics', cid: a.course_id }); });
   dl.sort((a, b) => a.date.localeCompare(b.date));
   $('hm-dl').innerHTML = dl.length ? dl.slice(0, 6).map(d => {
     const n = dfn(d.date), dc = n <= 0 ? 'dr' : n <= 3 ? 'da' : 'dg';
-    return `<div class="row"><div class="dot ${dc}"></div><span style="flex:1">${esc(d.name)}</span><span class="chip">${esc(d.tag)}</span><span style="font-size:11px;color:var(--tx2)">${n === 0 ? 'Today' : fmt(d.date)}</span></div>`;
+    const cDot = d.cid && typeof getCourseColor === 'function' ? `<div style="width:7px;height:7px;border-radius:50%;background:${getCourseColor(d.cid)};flex-shrink:0"></div>` : '';
+    return `<div class="row"><div class="dot ${dc}"></div>${cDot}<span style="flex:1">${esc(d.name)}</span><span class="chip">${esc(d.tag)}</span><span style="font-size:11px;color:var(--tx2)">${n === 0 ? 'Today' : fmt(d.date)}</span></div>`;
   }).join('') : '<div class="empty-state"><div class="ei">🗓️</div><div class="et">All clear</div><div class="es">No deadlines in the next 2 weeks</div></div>';
 
   // Today tasks
