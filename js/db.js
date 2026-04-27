@@ -1,4 +1,14 @@
-// Supabase client
+// ── Shared helpers (defined first so every script can use them) ──
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const today = () => new Date().toISOString().slice(0, 10);
+const thisMonth = () => new Date().toISOString().slice(0, 7);
+const addD = (d, n) => { const dt = new Date(d); dt.setDate(dt.getDate() + n); return dt.toISOString().slice(0, 10); };
+const fmt = d => d ? new Date(d + 'T12:00:00').toLocaleDateString('en-CA', { month:'short', day:'numeric' }) : '';
+const dfn = d => Math.round((new Date(d + 'T12:00:00') - new Date(new Date().toDateString())) / 86400000);
+const getLast = n => Array.from({ length:n }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - (n-1-i)); return d.toISOString().slice(0, 10); });
+
+// ── Supabase client ───────────────────────────────────────────────
 const SUPABASE_URL = 'https://bmamubgaydqscspiglte.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtYW11YmdheWRxc2NzcGlnbHRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMjc0MzIsImV4cCI6MjA5MjcwMzQzMn0.dhq66UFRhgP_DTtdE8EnzFfh98ex1BSgCygNXs5sw6U';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);

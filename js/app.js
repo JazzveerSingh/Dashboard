@@ -1,13 +1,3 @@
-// ── Helpers ───────────────────────────────────────────────────
-const $ = id => document.getElementById(id);
-const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const today = () => new Date().toISOString().slice(0, 10);
-const thisMonth = () => new Date().toISOString().slice(0, 7);
-const addD = (d, n) => { const dt = new Date(d); dt.setDate(dt.getDate() + n); return dt.toISOString().slice(0, 10); };
-const fmt = d => d ? new Date(d + 'T12:00:00').toLocaleDateString('en-CA', { month:'short', day:'numeric' }) : '';
-const dfn = d => Math.round((new Date(d + 'T12:00:00') - new Date(new Date().toDateString())) / 86400000);
-const getLast = n => Array.from({ length:n }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - (n-1-i)); return d.toISOString().slice(0, 10); });
-
 // ── Modals ────────────────────────────────────────────────────
 function openM(id) { $(id).classList.add('open'); }
 function closeM(id) { $(id).classList.remove('open'); }
