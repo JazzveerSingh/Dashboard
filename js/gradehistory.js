@@ -5,16 +5,22 @@ const ghToggles = new Map(); // cid -> { showScores: bool, showAvg: bool }
 // ── Assignment-based data ─────────────────────────────────────
 function ghBuildAssignData(cid) {
   const assigns = (window.S?.assignments || []).filter(a => String(a.course_id) === String(cid));
-  const asgnData = (typeof caLoad === 'function') ? caLoad(cid).asgn || {} : {};
+  // Merge Supabase fields (a.score etc.) with localStorage cache — Supabase wins
+  const lsData = (typeof caLoad === 'function') ? caLoad(cid).asgn || {} : {};
   const result = [];
 
   for (const a of assigns) {
-    const d = asgnData[a.id] || asgnData[String(a.id)] || {};
-    if (d.score == null) continue;
+    const ls = lsData[a.id] || lsData[String(a.id)] || {};
+    // Prefer Supabase score data; fall back to localStorage
+    const score = a.score ?? ls.score;
+    if (score == null) continue;
 
-    const tsSource = a.created_at || d.score_ts;
+    const max = a.max_score ?? ls.max ?? 100;
+    const weight = a.weight ?? ls.weight ?? 1;
+    const score_ts = a.score_ts ?? ls.score_ts;
+    const tsSource = a.created_at || score_ts;
     if (!tsSource) {
-      console.warn('[GradeHistory] skipped scored assignment without timestamp', a, d);
+      console.warn('[GradeHistory] skipped scored assignment without timestamp', a.id);
       continue;
     }
     const tsValue = new Date(tsSource).getTime();
@@ -23,27 +29,26 @@ function ghBuildAssignData(cid) {
       continue;
     }
 
-    const score = parseFloat(d.score);
-    const max = d.max != null ? parseFloat(d.max) : 100;
-    const weight = d.weight != null ? parseFloat(d.weight) : 1;
-    const pct = max > 0 ? score / max * 100 : 0;
+    const scoreF = parseFloat(score);
+    const maxF = parseFloat(max) || 100;
+    const weightF = parseFloat(weight) || 1;
+    const pct = maxF > 0 ? scoreF / maxF * 100 : 0;
+    const type = a.type ?? ls.type ?? 'assignment';
 
     result.push({
       id: a.id,
       name: a.name,
-      score,
-      max: max || 100,
-      weight: weight || 1,
+      score: scoreF,
+      max: maxF,
+      weight: weightF,
       pct,
       ts: tsSource,
-      loggedAt: tsSource,
-      isTest: d.type === 'test'
+      loggedAt: score_ts || tsSource,
+      isTest: type === 'test'
     });
   }
 
-  const sorted = result.sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
-  console.debug('[GradeHistory] buildAssignData', cid, sorted);
-  return sorted;
+  return result.sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
 }
 
 function ghBuildTrend(assignData) {

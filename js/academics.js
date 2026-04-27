@@ -80,6 +80,39 @@ function caLoad(cid) {
 }
 function caSave(cid, data) { try { localStorage.setItem(CA_PRE + cid, JSON.stringify(data)); } catch {} }
 
+// ── Hydrate localStorage from Supabase score data ─────────────
+// Called once after loadAll() so the grade chart works on any device.
+function caHydrateFromSupabase() {
+  if (!window.S?.assignments?.length) return;
+  const byCourse = {};
+  S.assignments.forEach(a => {
+    const hasData = a.score != null || (a.type && a.type !== 'assignment') ||
+                    (a.max_score != null && a.max_score !== 100) ||
+                    (a.weight != null && a.weight !== 1);
+    if (!hasData) return;
+    if (!byCourse[a.course_id]) byCourse[a.course_id] = {};
+    const entry = {};
+    if (a.score != null) entry.score = a.score;
+    if (a.max_score != null && a.max_score !== 100) entry.max = a.max_score;
+    if (a.weight != null && a.weight !== 1) entry.weight = a.weight;
+    if (a.type && a.type !== 'assignment') entry.type = a.type;
+    if (a.score_ts) entry.score_ts = a.score_ts;
+    if (Object.keys(entry).length) byCourse[a.course_id][a.id] = entry;
+  });
+  Object.entries(byCourse).forEach(([cid, asgnMap]) => {
+    const d = caLoad(Number(cid));
+    let changed = false;
+    Object.entries(asgnMap).forEach(([aid, vals]) => {
+      const aidN = Number(aid);
+      if (!d.asgn[aidN]) { d.asgn[aidN] = {}; changed = true; }
+      Object.entries(vals).forEach(([k, v]) => {
+        if (d.asgn[aidN][k] !== v) { d.asgn[aidN][k] = v; changed = true; }
+      });
+    });
+    if (changed) caSave(Number(cid), d);
+  });
+}
+
 // ── Type helpers (accessible from app.js) ─────────────────────
 function isDoneLogically(a, asgn) {
   return asgn[a.id]?.type === 'test' ? asgn[a.id]?.score != null : a.status === 'done';
@@ -126,8 +159,6 @@ async function caEditSave(aid) {
   const statusEl = document.getElementById(`ce-status-${aid}`);
   const typeVal  = document.getElementById(`ce-type-${aid}`)?.value;
   const newStatus = statusEl?.value || a.status;
-  await dbUpdate('assignments', aid, { name: nameVal, due_date: dateVal, status: newStatus });
-  a.name = nameVal; a.due_date = dateVal; a.status = newStatus;
   const d = caLoad(cid);
   if (!d.asgn[aid]) d.asgn[aid] = {};
   if (!isNaN(scoreVal)) { d.asgn[aid].score = scoreVal; if (!d.asgn[aid].score_ts) d.asgn[aid].score_ts = new Date().toISOString(); }
@@ -136,6 +167,17 @@ async function caEditSave(aid) {
   if (!isNaN(weightVal) && weightVal > 0) d.asgn[aid].weight = weightVal; else delete d.asgn[aid].weight;
   if (typeVal) d.asgn[aid].type = typeVal;
   caSave(cid, d);
+  const sbUpdate = {
+    name: nameVal, due_date: dateVal, status: newStatus,
+    score: d.asgn[aid].score ?? null,
+    max_score: d.asgn[aid].max ?? 100,
+    weight: d.asgn[aid].weight ?? 1,
+    type: d.asgn[aid].type ?? 'assignment',
+    score_ts: d.asgn[aid].score_ts ?? null
+  };
+  await dbUpdate('assignments', aid, sbUpdate);
+  a.name = nameVal; a.due_date = dateVal; a.status = newStatus;
+  Object.assign(a, { score: sbUpdate.score, max_score: sbUpdate.max_score, weight: sbUpdate.weight, type: sbUpdate.type, score_ts: sbUpdate.score_ts });
   acEditId = null; acEditOrigAsgn = null;
   renderAcademics(); renderHome();
   setTimeout(() => {
@@ -194,8 +236,25 @@ function caSetMax(cid, aid, val) {
   caSave(cid, d); caRefresh(cid);
 }
 
-function caScoreBlur(cid) {
+async function caScoreBlur(cid, aid) {
   renderAcaMeta();
+  if (!aid) return;
+  const d = caLoad(cid);
+  const asgn = d.asgn[aid] || {};
+  const update = asgn.score != null
+    ? { score: asgn.score, score_ts: asgn.score_ts || null }
+    : { score: null, score_ts: null };
+  await dbUpdate('assignments', aid, update);
+  const a = S.assignments.find(a => a.id === aid);
+  if (a) { a.score = update.score; a.score_ts = update.score_ts; }
+}
+
+async function caMaxBlur(cid, aid) {
+  const d = caLoad(cid);
+  const max = d.asgn[aid]?.max ?? 100;
+  await dbUpdate('assignments', aid, { max_score: max });
+  const a = S.assignments.find(a => a.id === aid);
+  if (a) a.max_score = max;
 }
 
 function caCalc(cid, assigns) {
@@ -415,17 +474,26 @@ async function saveAssign() {
   const name = $('a-name').value.trim(); if (!name) return;
   const cid = parseInt($('a-cid').value);
   const status = acAssignType === 'test' ? 'todo' : $('a-status').value;
-  const row = await dbInsert('assignments', { course_id: cid, name, due_date: $('a-date').value || null, status });
+  const sv = parseFloat($('a-score').value), mv = parseFloat($('a-max').value), wv = parseFloat($('a-weight').value);
+  const scoreTs = !isNaN(sv) ? new Date().toISOString() : null;
+  const sbExtra = {
+    type: acAssignType,
+    score: !isNaN(sv) ? sv : null,
+    max_score: !isNaN(mv) ? mv : 100,
+    weight: (!isNaN(wv) && wv > 0) ? wv : 1,
+    score_ts: scoreTs
+  };
+  const row = await dbInsert('assignments', { course_id: cid, name, due_date: $('a-date').value || null, status, ...sbExtra });
   if (row) {
-    const sv = parseFloat($('a-score').value), mv = parseFloat($('a-max').value), wv = parseFloat($('a-weight').value);
     const d = caLoad(cid);
     if (!d.asgn[row.id]) d.asgn[row.id] = {};
     d.asgn[row.id].type = acAssignType;
-    if (!isNaN(sv)) { d.asgn[row.id].score = sv; d.asgn[row.id].score_ts = new Date().toISOString(); }
+    if (!isNaN(sv)) { d.asgn[row.id].score = sv; d.asgn[row.id].score_ts = scoreTs; }
     if (!isNaN(mv)) d.asgn[row.id].max = mv;
     if (!isNaN(wv) && wv > 0) d.asgn[row.id].weight = wv;
     caSave(cid, d);
-    S.assignments.push(row); closeM('m-assign'); renderAcademics();
+    S.assignments.push({ ...row, ...sbExtra });
+    closeM('m-assign'); renderAcademics();
   }
 }
 
@@ -567,11 +635,11 @@ function renderAcademics() {
         scoreCell = `<div style="display:flex;align-items:center;gap:3px;flex-wrap:nowrap">
           <input type="number" min="0" value="${score??''}" placeholder="—"
             style="width:48px;text-align:center;font-size:12px;padding:3px 4px${scoreOver?';border-color:var(--red)':''}"
-            oninput="caSetScore(${c.id},${a.id},this.value)" onblur="caScoreBlur(${c.id})"/>
+            oninput="caSetScore(${c.id},${a.id},this.value)" onblur="caScoreBlur(${c.id},${a.id})"/>
           <span style="font-size:11px;color:var(--tx2)">/</span>
           <input type="number" min="1" value="${max}"
             style="width:44px;text-align:center;font-size:12px;padding:3px 4px"
-            oninput="caSetMax(${c.id},${a.id},this.value)"/>
+            oninput="caSetMax(${c.id},${a.id},this.value)" onblur="caMaxBlur(${c.id},${a.id})"/>
           <span id="ca-pct-${a.id}" style="font-size:10px;font-weight:700;color:${col};min-width:28px${pct==null?';display:none':''}">${pct!=null?pct.toFixed(0)+'%':''}</span>
           ${!isTestType ? `<span id="ca-sw-${a.id}" style="color:var(--amber);font-size:11px${score==null?'':';display:none'}" title="No score entered">⚠</span>` : ''}
         </div>`;

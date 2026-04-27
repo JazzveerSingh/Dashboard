@@ -98,6 +98,7 @@ async function onSignIn(user, displayName) {
   document.getElementById('app').style.display = 'flex';
   await ensureProfile(displayName);
   await loadAll();
+  caHydrateFromSupabase();
   applyProfile();
   initCats();
   initClock();
