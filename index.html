@@ -96,6 +96,17 @@
   </div>
 </div>
 
+<div class="mbg" id="m-changelog">
+  <div class="modal" style="max-width:480px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h3 style="margin:0">What's New</h3>
+      <button class="xb" onclick="closeChangelog()">✕</button>
+    </div>
+    <div id="cl-body" style="max-height:420px;overflow-y:auto"></div>
+    <div class="mbtns"><button class="bp" onclick="closeChangelog()">Got it</button></div>
+  </div>
+</div>
+
 <div class="confetti-wrap" id="confetti-wrap"></div>
 
 <!-- MAIN APP -->
@@ -106,7 +117,7 @@
       <div class="sb-name" id="sb-nm">Jazz</div>
       <div class="sb-hint">Click to edit</div>
     </div>
-    <div class="fc-wrap">
+    <div class="fc-wrap" id="fc-wrap" onclick="toggleClockFmt()" style="cursor:pointer">
       <div class="fc-row">
         <div class="fc-grp">
           <div class="fcd" id="fc-h0"><div class="fc-st">0</div><div class="tp"><span>0</span></div><div class="bt"><span>0</span></div><div class="dv"></div></div>
@@ -116,6 +127,9 @@
         <div class="fc-grp">
           <div class="fcd" id="fc-m0"><div class="fc-st">0</div><div class="tp"><span>0</span></div><div class="bt"><span>0</span></div><div class="dv"></div></div>
           <div class="fcd" id="fc-m1"><div class="fc-st">0</div><div class="tp"><span>0</span></div><div class="bt"><span>0</span></div><div class="dv"></div></div>
+        </div>
+        <div class="fc-grp" id="fc-ap-grp" style="margin-left:5px;opacity:0;transition:opacity .3s">
+          <div class="fcd fcd-ap" id="fc-ap"><div class="fc-st">AM</div><div class="tp"><span>AM</span></div><div class="bt"><span>AM</span></div><div class="dv"></div></div>
         </div>
       </div>
       <div class="fc-date" id="fc-date"></div>
@@ -135,6 +149,7 @@
     </div>
     <div class="sb-div"></div>
     <div class="sb-bot">
+      <button onclick="openChangelog(false)" style="width:100%;font-size:12px;padding:7px;margin-bottom:6px;position:relative;text-align:left">What's New <span id="cl-dot" style="display:none;width:6px;height:6px;border-radius:50%;background:var(--acc);position:absolute;top:8px;right:10px"></span></button>
       <button onclick="toggleTheme()" id="theme-btn" style="width:100%;font-size:12px;padding:7px;margin-bottom:6px">🌙 Dark mode</button>
       <button onclick="signOut()" style="width:100%;font-size:12px;padding:7px;color:var(--tx2)">Sign out</button>
     </div>
@@ -288,6 +303,7 @@
 <script src="js/pomo.js"></script>
 <script src="js/gradehistory.js"></script>
 <script src="js/calc.js"></script>
+<script src="js/changelog.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

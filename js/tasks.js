@@ -25,7 +25,7 @@ function renderTagStrip() {
   const strip = $('tstrip'); if (!strip) return;
   strip.innerHTML =
     `<span class="tpill${!TF ? ' on' : ''}" onclick="setTF('',this)">All</span>` +
-    getTags().map(t => `<span class="tpill${TF === t.id ? ' on' : ''}" onclick="setTF(${JSON.stringify(t.id)},this)">${esc(t.label)}</span>`).join('') +
+    getTags().map(t => `<span class="tpill${TF === t.id ? ' on' : ''}" onclick="setTF('${t.id}',this)">${esc(t.label)}</span>`).join('') +
     `<span class="tpill" onclick="openTagMgr()" style="color:var(--tx3)">⚙ Tags</span>`;
 }
 
@@ -42,8 +42,8 @@ function renderTagMgr() {
   el.innerHTML = getTags().map(t => `
     <div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:0.5px solid var(--bd)">
       <input type="text" value="${esc(t.label)}" style="flex:1;font-size:13px;padding:4px 8px"
-        onblur="renameTag(${JSON.stringify(t.id)},this.value)"/>
-      <button class="xb" onclick="deleteTag(${JSON.stringify(t.id)})">✕</button>
+        onblur="renameTag('${t.id}',this.value)"/>
+      <button class="xb" onclick="deleteTag('${t.id}')">✕</button>
     </div>`).join('');
 }
 

@@ -1,4 +1,5 @@
 let prevD = {};
+let clockIs12h = localStorage.getItem('clock12h') === 'true';
 
 function setD(id, v) {
   const c = document.getElementById(id); if (!c) return;
@@ -34,25 +35,73 @@ function flipD(id, ov, nv) {
 
 function updateGreeting() {
   const hr = new Date().getHours(), g = document.getElementById('greeting');
-  if (g) g.textContent = hr < 12 ? 'Good morning \u2726' : hr < 17 ? 'Good afternoon \u2726' : 'Good evening \u2726';
+  if (g) g.textContent = hr < 12 ? 'Good morning ✦' : hr < 17 ? 'Good afternoon ✦' : 'Good evening ✦';
+}
+
+function getClockDigits(now) {
+  let rawH = now.getHours();
+  const m = String(now.getMinutes()).padStart(2, '0');
+  let period = null;
+  if (clockIs12h) {
+    period = rawH >= 12 ? 'PM' : 'AM';
+    rawH = rawH % 12 || 12;
+  }
+  const h = String(rawH).padStart(2, '0');
+  return { h0: h[0], h1: h[1], m0: m[0], m1: m[1], period };
 }
 
 function tickClock() {
-  const now = new Date(), h = String(now.getHours()).padStart(2, '0'), m = String(now.getMinutes()).padStart(2, '0');
-  const cur = { h0: h[0], h1: h[1], m0: m[0], m1: m[1] };
-  Object.entries(cur).forEach(function (entry) {
-    flipD('fc-' + entry[0], prevD[entry[0]] != null ? prevD[entry[0]] : entry[1], entry[1]);
-    prevD[entry[0]] = entry[1];
+  const now = new Date();
+  const cur = getClockDigits(now);
+  ['h0','h1','m0','m1'].forEach(function(k) {
+    flipD('fc-' + k, prevD[k] != null ? prevD[k] : cur[k], cur[k]);
+    prevD[k] = cur[k];
   });
+  if (clockIs12h && cur.period !== prevD.period) {
+    flipD('fc-ap', prevD.period || cur.period, cur.period);
+  }
+  if (clockIs12h) prevD.period = cur.period;
+
+  const apGrp = document.getElementById('fc-ap-grp');
+  if (apGrp) apGrp.style.opacity = clockIs12h ? '1' : '0';
+
   const fd = document.getElementById('fc-date');
   if (fd) fd.textContent = now.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
   updateGreeting();
 }
 
+function toggleClockFmt() {
+  clockIs12h = !clockIs12h;
+  localStorage.setItem('clock12h', clockIs12h);
+  // Remove first-use tooltip after first toggle
+  localStorage.setItem('clock_toggled', '1');
+  const wrap = document.getElementById('fc-wrap');
+  if (wrap) wrap.removeAttribute('title');
+
+  const now = new Date();
+  const cur = getClockDigits(now);
+  prevD = { h0: cur.h0, h1: cur.h1, m0: cur.m0, m1: cur.m1, period: cur.period };
+  ['h0','h1','m0','m1'].forEach(function(k) { setD('fc-' + k, cur[k]); });
+  if (cur.period) setD('fc-ap', cur.period);
+  const apGrp = document.getElementById('fc-ap-grp');
+  if (apGrp) apGrp.style.opacity = clockIs12h ? '1' : '0';
+}
+
 function initClock() {
-  const now = new Date(), h = String(now.getHours()).padStart(2, '0'), m = String(now.getMinutes()).padStart(2, '0');
-  prevD = { h0: h[0], h1: h[1], m0: m[0], m1: m[1] };
-  Object.entries(prevD).forEach(function (entry) { setD('fc-' + entry[0], entry[1]); });
+  const now = new Date();
+  const cur = getClockDigits(now);
+  prevD = { h0: cur.h0, h1: cur.h1, m0: cur.m0, m1: cur.m1, period: cur.period };
+  ['h0','h1','m0','m1'].forEach(function(k) { setD('fc-' + k, cur[k]); });
+  if (cur.period) setD('fc-ap', cur.period);
+
+  const apGrp = document.getElementById('fc-ap-grp');
+  if (apGrp) apGrp.style.opacity = clockIs12h ? '1' : '0';
+
+  const wrap = document.getElementById('fc-wrap');
+  if (wrap && !localStorage.getItem('clock_toggled')) {
+    wrap.title = 'Click to toggle 12/24h';
+  }
+
   const fd = document.getElementById('fc-date');
   if (fd) fd.textContent = now.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
   updateGreeting();

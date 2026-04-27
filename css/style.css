@@ -71,6 +71,9 @@ body { font-family:var(--f); background:var(--bg); color:var(--tx); font-size:14
 .fcd .dv { position:absolute; top:50%; left:0; right:0; height:1px; background:rgba(0,0,0,.6); z-index:10; }
 .fc-col { font-size:18px; font-weight:700; color:var(--tx3); line-height:36px; margin:0 1px; }
 .fc-date { font-size:11px; color:var(--tx2); margin-top:6px; }
+.fcd-ap { width:36px; }
+.fcd-ap .fc-st { font-size:12px; }
+.fcd-ap .tp span, .fcd-ap .bt span { font-size:12px; }
 
 /* ── HEADER ── */
 .hdr { padding:20px 28px 0; display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:10px; flex-shrink:0; }

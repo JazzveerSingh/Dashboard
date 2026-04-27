@@ -43,6 +43,8 @@ async function onSignIn(user) {
   renderAll();
   initKeyboard();
   initQA();
+  clUpdateDot();
+  clCheckOnLoad();
 }
 
 async function ensureProfile() {
