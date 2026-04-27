@@ -1,5 +1,30 @@
 const CHANGELOG = [
   {
+    version: '1.8',
+    date: 'Apr 2025',
+    changes: {
+      New: [
+        'Dual-layer grade chart — individual assignment scores and running weighted average shown simultaneously',
+        'Assignment score points — each scored item plotted at the exact time it was graded; circles for assignments, diamonds for tests',
+        'Running average line — shows the cumulative weighted grade you held at every moment, recalculated after each entry',
+        'Layer toggles — "Scores" and "Average" buttons above the chart let you hide either layer independently',
+        'Inline assessment editing — click ✎ on any row to edit name, score, max, weight, due date, status, or type without opening a modal',
+        'Weight multiplier — set a weight on any assessment so it counts proportionally more in the course grade',
+      ],
+      Improved: [
+        'Grade chart X-axis is true time-proportional — entries logged weeks apart have real visual distance',
+        'Sparkline and GPA spark now derive from the running average instead of manual grade snapshots',
+        'Grade history chart shows Y-axis gridlines and adapts axis labels to the data range (days / weeks / months)',
+        'Save confirmation on edited rows pulses a brief highlight so you can see the change landed',
+        'Weight chip (×N) appears next to the assessment name when a non-default weight is set',
+      ],
+      Fixed: [
+        'Cancelling an inline edit correctly restores any weight changes made during the live preview',
+        'Type toggle (Assignment / Test) is locked once a score is logged to prevent accidental reclassification',
+      ],
+    },
+  },
+  {
     version: '1.7',
     date: 'Apr 2025',
     changes: {
@@ -96,7 +121,7 @@ const CHANGELOG = [
   },
 ];
 
-const CL_VERSION = '1.7';
+const CL_VERSION = '1.8';
 
 function clCheckOnLoad() {
   const seen = localStorage.getItem('cl_seen');
