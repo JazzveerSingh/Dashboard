@@ -200,6 +200,48 @@ function ghChartDual(cid, courseColor) {
   </svg>`;
 }
 
+// ── Snapshot chart (S.gradeSnapshots) ────────────────────────
+function ghBuildSnapshotData(courseId) {
+  return (window.S?.gradeSnapshots || [])
+    .filter(s => String(s.course_id) === String(courseId))
+    .sort((a, b) => new Date(a.snapshot_date) - new Date(b.snapshot_date))
+    .map(s => ({ ts: s.snapshot_date + 'T12:00:00', grade: parseFloat(s.grade) }))
+    .filter(s => !isNaN(s.grade));
+}
+
+function ghSnapshotChart(cid, courseColor) {
+  const data = ghBuildSnapshotData(cid);
+  if (data.length === 0) return '';
+
+  const W = 400, H = 100, pl = 28, pr = 4, pt = 10, pb = 20, iW = W - pl - pr, iH = H - pt - pb;
+  const times = data.map(d => new Date(d.ts).getTime());
+  const tMin = Math.min(...times), tMax = Math.max(...times);
+  const tRange = Math.max(1, tMax - tMin);
+  const toX = t => pl + ((new Date(t).getTime() - tMin) / tRange) * iW;
+  const toY = v => pt + (1 - Math.max(0, Math.min(v, 100)) / 100) * iH;
+
+  const yAxis = [0, 50, 100].map(v => {
+    const y = toY(v);
+    return `<line x1="${pl}" y1="${y.toFixed(1)}" x2="${pl + iW}" y2="${y.toFixed(1)}" stroke="var(--bd)" stroke-width="0.5"/>` +
+      `<text x="${pl - 4}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="7" fill="var(--tx3)">${v}</text>`;
+  }).join('');
+
+  const lineSvg = data.length >= 2
+    ? `<polyline points="${data.map(d => `${toX(d.ts).toFixed(1)},${toY(d.grade).toFixed(1)}`).join(' ')}" fill="none" stroke="${courseColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`
+    : '';
+
+  const dotsSvg = data.map(d => {
+    const cx = toX(d.ts), cy = toY(d.grade);
+    const lbl = new Date(d.ts).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
+    return `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.5" fill="${courseColor}" stroke="var(--bg2)" stroke-width="1.5"><title>${lbl}: ${d.grade.toFixed(1)}%</title></circle>`;
+  }).join('');
+
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:100px;display:block;overflow:visible">
+    ${yAxis}${lineSvg}${dotsSvg}
+    ${ghXAxis(tMin, tMax, pl, iW, H, pb)}
+  </svg>`;
+}
+
 // ── Mutations ─────────────────────────────────────────────────
 function ghToggle(cid) { ghOpen.has(cid) ? ghOpen.delete(cid) : ghOpen.add(cid); renderAcademics(); }
 
@@ -223,7 +265,12 @@ function ghHistoryHtml(c) {
   const avBtn = `<button onclick="ghToggleLayer(${cid},'showAvg')" style="font-size:11px;padding:3px 10px;border-radius:100px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;border:1px solid ${toggle.showAvg ? TREND_COL : 'var(--bd)'};background:${toggle.showAvg ? TREND_COL : 'transparent'};color:${toggle.showAvg ? '#fff' : 'var(--tx2)'}"><svg width="14" height="3" style="flex-shrink:0"><line x1="0" y1="1.5" x2="14" y2="1.5" stroke="${toggle.showAvg ? '#fff' : TREND_COL}" stroke-width="2.5" stroke-linecap="round"/></svg>Average</button>`;
   const toggleBtns = `<div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">${scBtn}${avBtn}</div>`;
 
-  return `${toggle$header}<div style="margin-top:8px">${toggleBtns}${ghChartDual(cid, courseColor)}</div>`;
+  const snapshotSvg = ghSnapshotChart(cid, courseColor);
+  const snapshotSection = snapshotSvg
+    ? `<div style="margin-top:12px"><div style="font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:6px">Grade snapshots</div>${snapshotSvg}</div>`
+    : '';
+
+  return `${toggle$header}<div style="margin-top:8px">${toggleBtns}${ghChartDual(cid, courseColor)}${snapshotSection}</div>`;
 }
 
 // ── Overall GPA sparkline ─────────────────────────────────────
