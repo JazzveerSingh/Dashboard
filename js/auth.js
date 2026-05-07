@@ -98,8 +98,9 @@ async function onSignIn(user, displayName) {
   document.getElementById('app').style.display = 'flex';
   await ensureProfile(displayName);
   await loadAll();
-  caHydrateFromSupabase();        // Supabase → localStorage (other devices)
-  await caSyncLocalScoresToSupabase(); // localStorage → Supabase (this device's existing data)
+  await runMigrations();               // localStorage → Supabase (one-time, per-table)
+  caHydrateFromSupabase();             // Supabase → localStorage (other devices)
+  await caSyncLocalScoresToSupabase(); // localStorage → Supabase (grade scores)
   applyProfile();
   initCats();
   initClock();
