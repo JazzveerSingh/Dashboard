@@ -74,12 +74,12 @@ async function loadAll() {
     budgetLimits, budgetArchive, savingsContribs, gradeSnapshots
   ] = await Promise.all([
     db.from('profile').select('id, user_id, name, avatar, location').eq('user_id', uid).single(),
-    q('tasks',        'id, user_id, name, priority, tag, due_date, done, created_at',                              'created_at', false),
-    q('courses',      'id, user_id, name, color, credits, created_at',                                             'created_at'),
-    q('assignments',  'id, user_id, course_id, name, due_date, weight, type, score, max_score, score_ts, created_at', 'created_at'),
-    q('transactions', 'id, user_id, name, category, amount, created_at',                                           'created_at', false),
-    q('savings',      'id, user_id, name, target_amount, current_amount, created_at',                              'created_at'),
-    q('habits',       'id, user_id, name, emoji, streak, best_streak, frequency, created_at',                      'created_at'),
+    q('tasks',        'id, user_id, name, priority, tag, due_date, done, created_at',                                    'created_at', false),
+    q('courses',      'id, user_id, name, grade, notes, created_at',                                                   'created_at'),
+    q('assignments',  'id, user_id, course_id, name, due_date, status, weight, type, score, max_score, score_ts, created_at', 'created_at'),
+    q('transactions', 'id, user_id, name, category, amount, created_at',                                               'created_at', false),
+    q('savings',      'id, user_id, name, target_amount, current_amount, created_at',                                  'created_at'),
+    q('habits',       'id, user_id, name, emoji, streak, created_at',                                                  'created_at'),
     q('habit_logs',   'id, user_id, habit_id, log_date',                                                           'log_date'),
     q('subtasks',           'id, user_id, task_id, text, done, created_at',                             'created_at'),
     q('task_archive',       'id, user_id, name, priority, tag, due_date, done, archived_at, created_at','archived_at', false),
