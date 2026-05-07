@@ -269,6 +269,7 @@ function caSetMax(cid, aid, val) {
 async function caScoreBlur(cid, aid) {
   renderAcaMeta();
   if (!aid) return;
+  if (!S.userId) { console.error('[ca] caScoreBlur: S.userId is null — score not saved to Supabase'); return; }
   const d = caLoad(cid);
   const asgn = d.asgn[aid] || {};
   const update = asgn.score != null
