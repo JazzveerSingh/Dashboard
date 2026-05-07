@@ -200,13 +200,12 @@ function ghChartDual(cid, courseColor) {
   </svg>`;
 }
 
-// ── Snapshot chart (S.gradeSnapshots) ────────────────────────
+// ── Snapshot chart (built from S.assignments scores) ─────────
 function ghBuildSnapshotData(courseId) {
-  return (window.S?.gradeSnapshots || [])
-    .filter(s => String(s.course_id) === String(courseId))
-    .sort((a, b) => new Date(a.snapshot_date) - new Date(b.snapshot_date))
-    .map(s => ({ ts: s.snapshot_date + 'T12:00:00', grade: parseFloat(s.grade) }))
-    .filter(s => !isNaN(s.grade));
+  const assignData = ghBuildAssignData(courseId);          // resolves Supabase + localStorage
+  return ghBuildTrend(assignData)                          // running cumulative average
+    .filter(t => t.avg != null)
+    .map(t => ({ ts: t.ts, grade: t.avg }));
 }
 
 function ghSnapshotChart(cid, courseColor) {
@@ -267,7 +266,7 @@ function ghHistoryHtml(c) {
 
   const snapshotSvg = ghSnapshotChart(cid, courseColor);
   const snapshotSection = snapshotSvg
-    ? `<div style="margin-top:12px"><div style="font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:6px">Grade snapshots</div>${snapshotSvg}</div>`
+    ? `<div style="margin-top:12px"><div style="font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:6px">Grade trend</div>${snapshotSvg}</div>`
     : '';
 
   return `${toggle$header}<div style="margin-top:8px">${toggleBtns}${ghChartDual(cid, courseColor)}${snapshotSection}</div>`;
